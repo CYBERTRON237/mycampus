@@ -1,0 +1,13 @@
+# URL rewriting for universities API
+RewriteEngine On
+
+# Handle main endpoint
+RewriteRule ^universities$ index.php [L,QSA]
+
+# Handle sub-endpoints
+RewriteRule ^universities/(.*)$ index.php [L,QSA]
+
+# Handle direct access to index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]

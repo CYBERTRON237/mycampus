@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Préinscription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test API Préinscription</h1>
+    
+    <form id="testForm">
+        <div class="form-group">
+            <label for="unique_code">Code Unique:</label>
+            <input type="text" id="unique_code" name="unique_code" value="TEST2024001" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="faculty">Faculté:</label>
+            <input type="text" id="faculty" name="faculty" value="Faculté des Sciences (FS)" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="last_name">Nom:</label>
+            <input type="text" id="last_name" name="last_name" value="TEST" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="first_name">Prénom:</label>
+            <input type="text" id="first_name" name="first_name" value="User" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="date_of_birth">Date de naissance:</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" value="2000-01-01" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="place_of_birth">Lieu de naissance:</label>
+            <input type="text" id="place_of_birth" name="place_of_birth" value="Yaoundé" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="gender">Sexe:</label>
+            <select id="gender" name="gender" required>
+                <option value="MASCULIN">Masculin</option>
+                <option value="FEMININ">Féminin</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="residence_address">Adresse de résidence:</label>
+            <input type="text" id="residence_address" name="residence_address" value="Yaoundé, Cameroun" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="marital_status">Situation matrimoniale:</label>
+            <select id="marital_status" name="marital_status" required>
+                <option value="CELIBATAIRE">Célibataire</option>
+                <option value="MARIE(E)">Marié(e)</option>
+                <option value="DIVORCE(E)">Divorcé(e)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="phone_number">Numéro de téléphone:</label>
+            <input type="tel" id="phone_number" name="phone_number" value="655123456" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="test@example.com" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="first_language">Première langue:</label>
+            <select id="first_language" name="first_language" required>
+                <option value="FRANÇAIS">Français</option>
+                <option value="ANGLAIS">Anglais</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="professional_situation">Situation professionnelle:</label>
+            <select id="professional_situation" name="professional_situation" required>
+                <option value="SANS EMPLOI">Sans emploi</option>
+                <option value="SALARIE(E)">Salarié(e)</option>
+                <option value="EN AUTO-EMPLOI">En auto-emploi</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="is_birth_date_on_certificate">Date sur acte de naissance:</label>
+            <select id="is_birth_date_on_certificate" name="is_birth_date_on_certificate">
+                <option value="1">Oui</option>
+                <option value="0">Non</option>
+            </select>
+        </div>
+        
+        <button type="submit">Tester l'API</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {};
+            
+            // Convertir FormData en objet
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/preinscription/submit.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>Succès!</h3>
+                        <p>${result.message}</p>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>Erreur!</h3>
+                        <p>${result.message}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>Erreur de connexion!</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

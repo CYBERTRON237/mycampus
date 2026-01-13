@@ -1,0 +1,46 @@
+# Activer le rewrite engine
+RewriteEngine On
+
+# Headers CORS (gérés par PHP dans config/cors.php pour éviter les doublons)
+# Header always set Access-Control-Allow-Origin "*"
+# Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+# Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+
+# Gérer les requêtes OPTIONS (pre-flight)
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# NE PAS rediriger si le fichier ou dossier existe
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Router les requêtes d'authentification directement vers le bon fichier
+RewriteRule ^auth/login$ auth/login.php [L]
+
+# Router les requêtes API vers les fichiers appropriés
+# User Management API - exclure "users" pour le laisser passer au routeur
+RewriteRule ^user_management/routes/(.*)$ user_management/routes/api.php [QSA,L]
+RewriteRule ^user_management/config/(.*)$ user_management/config/$1 [QSA,L]
+RewriteRule ^user_management/models/(.*)$ user_management/models/$1 [QSA,L]
+RewriteRule ^user_management/controllers/(.*)$ user_management/controllers/$1 [QSA,L]
+
+# Messaging API
+RewriteRule ^messaging/(.*)$ messaging/routes/api.php [QSA,L]
+
+# Analytics API
+RewriteRule ^analytics/(.*)$ analytics/routes/api.php [QSA,L]
+
+# Announcements API
+RewriteRule ^announcements/(.*)$ announcements/routes/api.php [QSA,L]
+
+# Audit API
+RewriteRule ^audit/(.*)$ audit/routes/api.php [QSA,L]
+
+# Admin Zone API
+RewriteRule ^adminzone/(.*)$ adminzone/routes/api.php [QSA,L]
+
+# Par défaut, rediriger vers index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]

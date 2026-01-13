@@ -1,0 +1,734 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/preinscription_provider.dart';
+import '../../models/preinscription_model.dart';
+import '../widgets/preinscription_validation_widget.dart';
+import '../widgets/validation_actions_widget.dart';
+import '../widgets/validation_stats_widget.dart';
+import 'preinscription_detail_page.dart';
+
+class PreinscriptionValidationPage extends StatefulWidget {
+  const PreinscriptionValidationPage({super.key});
+
+  @override
+  State<PreinscriptionValidationPage> createState() => _PreinscriptionValidationPageState();
+}
+
+class _PreinscriptionValidationPageState extends State<PreinscriptionValidationPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Filters for validation
+  String? _selectedFaculty;
+  String _searchQuery = '';
+  bool _showOnlyPending = true;
+  
+  // Selection state
+  final Set<int> _selectedPreinscriptions = <int>{};
+  bool _isSelecting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    
+    // Initialize data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PreinscriptionProvider>().initialize();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('Validation des Préinscriptions'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.pending_actions), text: 'En Attente'),
+            Tab(icon: Icon(Icons.visibility), text: 'À Réviser'),
+            Tab(icon: Icon(Icons.check_circle), text: 'Validées'),
+            Tab(icon: Icon(Icons.cancel), text: 'Rejetées'),
+          ],
+        ),
+        actions: [
+          if (_isSelecting) ...[
+            IconButton(
+              icon: const Icon(Icons.select_all),
+              onPressed: _toggleSelectAll,
+              tooltip: 'Sélectionner tout',
+            ),
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: _clearSelection,
+              tooltip: 'Désélectionner tout',
+            ),
+            IconButton(
+              icon: const Icon(Icons.done_all),
+              onPressed: _batchValidate,
+              tooltip: 'Valider la sélection',
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              onPressed: _batchReject,
+              tooltip: 'Rejeter la sélection',
+            ),
+          ],
+          IconButton(
+            icon: Icon(_isSelecting ? Icons.close : Icons.checklist),
+            onPressed: () => setState(() {
+              _isSelecting = !_isSelecting;
+              _selectedPreinscriptions.clear();
+            }),
+            tooltip: _isSelecting ? 'Quitter la sélection' : 'Mode sélection',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              context.read<PreinscriptionProvider>().initialize();
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Filters and search
+          _buildFiltersHeader(),
+          
+          // Validation statistics
+          Consumer<PreinscriptionProvider>(
+            builder: (context, provider, child) {
+              return ValidationStatsWidget(
+                stats: provider.stats,
+                selectedCount: _selectedPreinscriptions.length,
+                isSelecting: _isSelecting,
+              );
+            },
+          ),
+          
+          // Tab content
+          Expanded(
+            child: Consumer<PreinscriptionProvider>(
+              builder: (context, provider, child) {
+                if (provider.error != null) {
+                  return _buildErrorWidget(provider.error!, provider);
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildPreinscriptionsList(provider, 'pending'),
+                    _buildPreinscriptionsList(provider, 'under_review'),
+                    _buildPreinscriptionsList(provider, 'accepted'),
+                    _buildPreinscriptionsList(provider, 'rejected'),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: _isSelecting && _selectedPreinscriptions.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _showBatchActions,
+              icon: const Icon(Icons.more_vert),
+              label: Text('Actions (${_selectedPreinscriptions.length})'),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildFiltersHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Search bar
+          TextField(
+            onChanged: (value) {
+              _searchQuery = value;
+              _applyFilters();
+            },
+            decoration: InputDecoration(
+              hintText: 'Rechercher par nom, email, code...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                        _applyFilters();
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Filter chips
+          Row(
+            children: [
+              FilterChip(
+                label: const Text('En attente uniquement'),
+                selected: _showOnlyPending,
+                onSelected: (value) {
+                  setState(() {
+                    _showOnlyPending = value;
+                  });
+                  _applyFilters();
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFacultyChip('UY1'),
+                      _buildFacultyChip('FALSH'),
+                      _buildFacultyChip('FS'),
+                      _buildFacultyChip('FSE'),
+                      _buildFacultyChip('IUT'),
+                      _buildFacultyChip('ENSPY'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFacultyChip(String faculty) {
+    final isSelected = _selectedFaculty == faculty;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: FilterChip(
+        label: Text(faculty),
+        selected: isSelected,
+        onSelected: (value) {
+          setState(() {
+            _selectedFaculty = value ? faculty : null;
+          });
+          _applyFilters();
+        },
+      ),
+    );
+  }
+
+  Widget _buildPreinscriptionsList(PreinscriptionProvider provider, String status) {
+    final filteredPreinscriptions = provider.preinscriptions
+        .where((p) => p.status == status)
+        .where((p) => _selectedFaculty == null || p.faculty == _selectedFaculty)
+        .where((p) => _searchQuery.isEmpty || 
+            p.firstName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            p.lastName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            p.email.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            (p.uniqueCode?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false))
+        .toList();
+
+    if (filteredPreinscriptions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _getStatusIcon(status),
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Aucune préinscription ${_getStatusDisplayName(status).toLowerCase()}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Essayez de modifier les filtres ou d\'actualiser',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => provider.fetchPreinscriptions(refresh: true),
+      child: ListView.builder(
+        itemCount: filteredPreinscriptions.length,
+        itemBuilder: (context, index) {
+          final preinscription = filteredPreinscriptions[index];
+          final isSelected = _selectedPreinscriptions.contains(preinscription.id);
+          
+          return PreinscriptionValidationWidget(
+            preinscription: preinscription,
+            isSelected: isSelected,
+            isSelecting: _isSelecting,
+            onTap: () {
+              if (_isSelecting) {
+                _toggleSelection(preinscription.id!);
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PreinscriptionDetailPage(
+                      preinscriptionId: preinscription.id,
+                    ),
+                  ),
+                );
+              }
+            },
+            onSelectionToggle: () => _toggleSelection(preinscription.id!),
+            onQuickAction: (action) => _handleQuickAction(preinscription, action),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String error, PreinscriptionProvider provider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 16.0),
+            Text(
+              'Une erreur est survenue',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: () {
+                provider.clearError();
+                provider.initialize();
+              },
+              child: const Text('Réessayer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _applyFilters() {
+    // Apply filters through provider
+    context.read<PreinscriptionProvider>().setSearchQuery(_searchQuery);
+    context.read<PreinscriptionProvider>().setFacultyFilter(_selectedFaculty);
+    if (_showOnlyPending) {
+      context.read<PreinscriptionProvider>().setStatusFilter('pending');
+    } else {
+      context.read<PreinscriptionProvider>().setStatusFilter(null);
+    }
+  }
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedPreinscriptions.contains(id)) {
+        _selectedPreinscriptions.remove(id);
+      } else {
+        _selectedPreinscriptions.add(id);
+      }
+    });
+  }
+
+  void _toggleSelectAll() {
+    final provider = context.read<PreinscriptionProvider>();
+    final currentTabStatus = ['pending', 'under_review', 'accepted', 'rejected'][_tabController.index];
+    final filteredPreinscriptions = provider.preinscriptions
+        .where((p) => p.status == currentTabStatus)
+        .where((p) => _selectedFaculty == null || p.faculty == _selectedFaculty)
+        .where((p) => _searchQuery.isEmpty || 
+            p.firstName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            p.lastName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            p.email.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            (p.uniqueCode?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false))
+        .toList();
+
+    setState(() {
+      if (_selectedPreinscriptions.length == filteredPreinscriptions.length) {
+        _selectedPreinscriptions.clear();
+      } else {
+        _selectedPreinscriptions.clear();
+        _selectedPreinscriptions.addAll(filteredPreinscriptions.map((p) => p.id!));
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedPreinscriptions.clear();
+    });
+  }
+
+  void _batchValidate() {
+    if (_selectedPreinscriptions.isEmpty) return;
+    
+    _showBatchValidationDialog('validate');
+  }
+
+  void _batchReject() {
+    if (_selectedPreinscriptions.isEmpty) return;
+    
+    _showBatchValidationDialog('reject');
+  }
+
+  void _showBatchActions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => ValidationActionsWidget(
+        selectedCount: _selectedPreinscriptions.length,
+        onValidateAll: () {
+          Navigator.pop(context);
+          _batchValidate();
+        },
+        onRejectAll: () {
+          Navigator.pop(context);
+          _batchReject();
+        },
+        onScheduleInterview: () {
+          Navigator.pop(context);
+          _showBatchInterviewDialog();
+        },
+        onExport: () {
+          Navigator.pop(context);
+          _exportSelection();
+        },
+      ),
+    );
+  }
+
+  void _showBatchValidationDialog(String action) {
+    final isValidate = action == 'validate';
+    final title = isValidate ? 'Valider la sélection' : 'Rejeter la sélection';
+    final icon = isValidate ? Icons.check_circle : Icons.cancel;
+    final color = isValidate ? Colors.green : Colors.red;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Vous êtes sur le point de ${isValidate ? 'valider' : 'rejeter'} ${_selectedPreinscriptions.length} préinscription(s).'),
+            const SizedBox(height: 16),
+            if (!isValidate) ...[
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Motif du rejet (optionnel)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              final provider = context.read<PreinscriptionProvider>();
+              bool allSuccess = true;
+              
+              for (final id in _selectedPreinscriptions) {
+                final success = await provider.updatePreinscriptionStatus(
+                  id,
+                  isValidate ? 'accepted' : 'rejected',
+                );
+                
+                if (!success) {
+                  allSuccess = false;
+                }
+              }
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(allSuccess 
+                        ? '${_selectedPreinscriptions.length} préinscription(s) ${isValidate ? 'validée(s)' : 'rejetée(s)} avec succès'
+                        : 'Certaines préinscriptions n\'ont pas pu être traitées'),
+                    backgroundColor: allSuccess ? Colors.green : Colors.orange.withOpacity(0.8),
+                  ),
+                );
+                
+                _clearSelection();
+                provider.initialize();
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: color),
+            child: Text(isValidate ? 'Valider' : 'Rejeter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBatchInterviewDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.calendar_today, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Planifier des entretiens'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Planifier un entretien pour ${_selectedPreinscriptions.length} préinscription(s)'),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Date et heure (YYYY-MM-DD HH:MM)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Lieu',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Fonction de planification en cours de développement')),
+              );
+            },
+            child: const Text('Planifier'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exportSelection() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Export en cours de développement')),
+    );
+  }
+
+  void _handleQuickAction(PreinscriptionModel preinscription, String action) {
+    switch (action) {
+      case 'validate':
+        _showQuickValidationDialog(preinscription, true);
+        break;
+      case 'reject':
+        _showQuickValidationDialog(preinscription, false);
+        break;
+      case 'interview':
+        _showQuickInterviewDialog(preinscription);
+        break;
+      case 'details':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PreinscriptionDetailPage(
+              preinscriptionId: preinscription.id,
+            ),
+          ),
+        );
+        break;
+    }
+  }
+
+  void _showQuickValidationDialog(PreinscriptionModel preinscription, bool isValidate) {
+    final title = isValidate ? 'Valider' : 'Rejeter';
+    final icon = isValidate ? Icons.check_circle : Icons.cancel;
+    final color = isValidate ? Colors.green : Colors.red;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 8),
+            Text('$title la préinscription'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${preinscription.firstName} ${preinscription.lastName}'),
+            Text(preinscription.email),
+            const SizedBox(height: 16),
+            if (!isValidate) ...[
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Motif du rejet',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              final success = await context.read<PreinscriptionProvider>().updatePreinscriptionStatus(
+                preinscription.id!,
+                isValidate ? 'accepted' : 'rejected',
+              );
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success 
+                        ? 'Préinscription ${isValidate ? 'validée' : 'rejetée'} avec succès'
+                        : 'Erreur lors du traitement'),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+                
+                context.read<PreinscriptionProvider>().initialize();
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: color),
+            child: Text(title),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickInterviewDialog(PreinscriptionModel preinscription) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.calendar_today, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Planifier un entretien'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${preinscription.firstName} ${preinscription.lastName}'),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Date et heure (YYYY-MM-DD HH:MM)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Lieu',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Fonction de planification en cours de développement')),
+              );
+            },
+            child: const Text('Planifier'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return Icons.pending;
+      case 'under_review': return Icons.visibility;
+      case 'accepted': return Icons.check_circle;
+      case 'rejected': return Icons.cancel;
+      default: return Icons.help;
+    }
+  }
+
+  String _getStatusDisplayName(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return 'En attente';
+      case 'under_review': return 'En révision';
+      case 'accepted': return 'Validées';
+      case 'rejected': return 'Rejetées';
+      default: return status;
+    }
+  }
+}

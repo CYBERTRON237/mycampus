@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Préinscription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test API Préinscription</h1>
+    
+    <button onclick="testDatabaseConnection()">1. Tester la connexion à la base de données</button>
+    <button onclick="checkTable()">2. Vérifier la table preinscriptions</button>
+    <button onclick="testPreinscriptionAPI()">3. Tester l'API de préinscription</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testDatabaseConnection() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/config/test_connection.php', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+                
+                const text = await response.text();
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `Status: ${response.status}\n\nRéponse brute:\n${text}`;
+                
+                try {
+                    const json = JSON.parse(text);
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `Succès!\n\n${JSON.stringify(json, null, 2)}`;
+                } catch (e) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `Erreur de parsing JSON: ${e.message}\n\nRéponse brute:\n${text}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `Erreur: ${error.message}`;
+            }
+        }
+        
+        async function checkTable() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/config/check_table.php', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+                
+                const text = await response.text();
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `Status: ${response.status}\n\nRéponse brute:\n${text}`;
+                
+                try {
+                    const json = JSON.parse(text);
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `Succès!\n\n${JSON.stringify(json, null, 2)}`;
+                } catch (e) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `Erreur de parsing JSON: ${e.message}\n\nRéponse brute:\n${text}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `Erreur: ${error.message}`;
+            }
+        }
+        
+        async function testPreinscriptionAPI() {
+            const resultDiv = document.getElementById('result');
+            
+            const testData = {
+                unique_code: 'TEST2024001',
+                faculty: 'Faculté des Sciences (FS)',
+                last_name: 'Test',
+                first_name: 'User',
+                middle_name: null,
+                date_of_birth: '2000-01-01',
+                is_birth_date_on_certificate: 1,
+                place_of_birth: 'Yaoundé',
+                gender: 'MASCULIN',
+                cni_number: null,
+                residence_address: 'Yaoundé, Cameroun',
+                marital_status: 'CELIBATAIRE',
+                phone_number: '655123456',
+                email: 'test@example.com',
+                first_language: 'FRANÇAIS',
+                professional_situation: 'SANS EMPLOI'
+            };
+            
+            try {
+                const response = await fetch('/api/preinscription/submit.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const text = await response.text();
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `Status: ${response.status}\n\nRéponse brute:\n${text}`;
+                
+                try {
+                    const json = JSON.parse(text);
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `Succès!\n\n${JSON.stringify(json, null, 2)}`;
+                } catch (e) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `Erreur de parsing JSON: ${e.message}\n\nRéponse brute:\n${text}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `Erreur: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

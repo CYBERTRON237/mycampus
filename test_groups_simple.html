@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Groups API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Test Groups API</h1>
+    <button onclick="testAPI()">Tester /api/messaging/groups/my</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NjU3NjUxODQsImV4cCI6MTc2NTg1MTU4NCwiaXNzIjoibXljYW1wdXMiLCJkYXRhIjp7ImlkIjozOCwiZW1haWwiOiJqamtrQGdtYWlsLmNvbSIsImlwIjoiMTI3LjAuMC4xIn19.-TmBvxC4k4sdfrXqrhuYD-fmvMsPCe-EX63EonwLDV8';
+            
+            try {
+                const response = await fetch('http://127.0.0.1/mycampus/api/messaging/groups/my', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                const resultDiv = document.getElementById('result');
+                resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+                resultDiv.innerHTML = `
+                    <h3>Status: ${response.status}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').className = 'result error';
+                document.getElementById('result').innerHTML = `
+                    <h3>Erreur réseau</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# API Dashboard Rector - MyCampus
+# Configuration des URLs propres et CORS
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Set CORS headers
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+
+# Handle preflight requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ - [R=200,L]
+
+# API endpoints
+RewriteRule ^dashboard/rector$ rector_dashboard_api.php [L]
+RewriteRule ^dashboard/rector/stats$ rector_dashboard_api.php [L]
+RewriteRule ^dashboard/rector/(.*)$ rector_dashboard_api.php [L]
+
+# Block direct access to PHP files (except index)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/dashboard/index\.php$
+RewriteRule ^(.*\.php)$ - [F,L]
+
+# Default to index if file doesn't exist
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L]

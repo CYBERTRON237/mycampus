@@ -1,0 +1,186 @@
+# --- Script PowerShell : Reset & create full per-module MVC structure for MyCampus ---
+# Run this from the project root: PS C:\wamp64\www\mycampus>
+
+$root = (Get-Item -Path ".").FullName
+Write-Host "Project root:" $root -ForegroundColor Green
+
+# --- Modules list A->Z (folder-safe names) ---
+$modules = @(
+  "accessibility",
+  "auth",
+  "analytics",
+  "announcements",
+  "support",
+  "backup",
+  "groups",
+  "documents",
+  "import_export",
+  "audit",
+  "kyc",
+  "localization",
+  "messaging",
+  "notifications",
+  "offers",
+  "settings",
+  "quizz",
+  "search",
+  "security",
+  "dashboards",
+  "users",
+  "versioning",
+  "integrations",
+  "reports",
+  "configs",
+  "adminzone"
+)
+
+# --- Paths to REMOVE if exist (only targeted folders created by previous scripts) ---
+$pathsToRemove = @(
+    Join-Path $root "lib/features",
+    Join-Path $root "lib/core",
+    Join-Path $root "lib/services",
+    Join-Path $root "lib/data",
+    Join-Path $root "lib/models",
+    Join-Path $root "lib/widgets",
+    Join-Path $root "lib/screens",
+    Join-Path $root "lib/routes",
+    Join-Path $root "lib/themes",
+    Join-Path $root "assets",
+    Join-Path $root "api"
+)
+
+# Confirm removal (no prompt) and remove targeted folders
+Write-Host "`n==> Removing previously created feature/api folders (targeted list) ..." -ForegroundColor Yellow
+foreach ($p in $pathsToRemove) {
+    if (Test-Path -LiteralPath $p) {
+        try {
+            Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Stop
+            Write-Host "Removed: $p" -ForegroundColor Cyan
+        } catch {
+            Write-Host "Failed to remove: $p  — $_" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "Not found (skip): $p" -ForegroundColor DarkGray
+    }
+}
+
+# --- Helper function: create folder and .gitkeep ---
+function New-FolderWithGitkeep {
+    param(
+        [Parameter(Mandatory=$true)][string]$Path
+    )
+    if (-not (Test-Path -LiteralPath $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+        Write-Host "Created: $Path" -ForegroundColor Green
+    } else {
+        Write-Host "Exists:  $Path" -ForegroundColor Yellow
+    }
+
+    $gitkeep = Join-Path $Path ".gitkeep"
+    if (-not (Test-Path -LiteralPath $gitkeep)) {
+        New-Item -ItemType File -Path $gitkeep -Force | Out-Null
+        # optional: set hidden attribute removed to keep simple
+        Write-Host "  -> .gitkeep added" -ForegroundColor DarkGray
+    }
+}
+
+# --- Core frontend folders (safe to recreate) ---
+$coreFolders = @(
+    "lib/core/utils",
+    "lib/core/theme",
+    "lib/core/errors",
+    "lib/core/constants",
+    "lib/core/di",
+    "lib/core/extensions",
+    "lib/local_db",
+    "lib/local_db/migrations",
+    "lib/local_db/daos",
+    "lib/generated",
+    "lib/routes",
+    "lib/widgets",
+    "lib/screens",
+    "lib/themes",
+    "lib/utils",
+    "lib/services/shared",        # shared service interfaces (api/auth/notification/storage)
+    "test/unit",
+    "test/widget",
+    "test/integration",
+    "database/migrations",
+    ".github/workflows",
+    "docker",
+    "config",
+    "scripts",
+    "docs",
+    "build"
+)
+
+Write-Host "`n==> Creating core frontend folders..." -ForegroundColor Yellow
+foreach ($f in $coreFolders) {
+    New-FolderWithGitkeep -Path (Join-Path $root $f)
+}
+
+# --- Create per-module frontend MVC structure ---
+Write-Host "`n==> Creating per-module frontend MVC folders..." -ForegroundColor Yellow
+foreach ($m in $modules) {
+    $base = Join-Path $root ("lib/features/" + $m)
+
+    $moduleFolders = @(
+        "$base/presentation/pages",
+        "$base/presentation/widgets",
+        "$base/presentation/views",
+        "$base/presentation/widgets/common",
+        "$base/controllers",                  # Controllers / BLoC / Cubit
+        "$base/models",                       # frontend models / DTOs
+        "$base/services",                     # feature specific service adapters
+        "$base/data/datasources/remote",
+        "$base/data/datasources/local",
+        "$base/data/repositories",
+        "$base/domain/usecases",
+        "$base/routes",
+        "$base/tests"
+    )
+
+    foreach ($mf in $moduleFolders) {
+        New-FolderWithGitkeep -Path $mf
+    }
+}
+
+# --- Create per-module backend API structure ---
+Write-Host "`n==> Creating per-module backend API folders..." -ForegroundColor Yellow
+# base api folders
+$apiBase = Join-Path $root "api"
+$apiCommon = @(
+    Join-Path $apiBase "common",
+    Join-Path $apiBase "config",
+    Join-Path $apiBase "migrations",
+    Join-Path $apiBase "scripts",
+    Join-Path $apiBase "tests"
+)
+foreach ($p in $apiCommon) { New-FolderWithGitkeep -Path $p }
+
+# create api modules
+foreach ($m in $modules) {
+    $apiModule = Join-Path $apiBase $m
+    $apiFolders = @(
+        Join-Path $apiModule "controllers",
+        Join-Path $apiModule "models",
+        Join-Path $apiModule "routes",
+        Join-Path $apiModule "services",
+        Join-Path $apiModule "migrations",
+        Join-Path $apiModule "tests"
+    )
+    foreach ($af in $apiFolders) {
+        New-FolderWithGitkeep -Path $af
+    }
+}
+
+# --- Recreate assets minimal structure (safe) ---
+Write-Host "`n==> Recreating assets folders..." -ForegroundColor Yellow
+$assets = @("assets/icons","assets/images","assets/fonts","assets/videos","assets/audios")
+foreach ($a in $assets) { New-FolderWithGitkeep -Path (Join-Path $root $a) }
+
+# --- Brief summary ---
+Write-Host "`n==> DONE: Project feature/API skeleton rebuilt." -ForegroundColor Green
+Write-Host " - Frontend features created under: $root\lib\features\{module}\[presentation|controllers|models|data|...]" -ForegroundColor Cyan
+Write-Host " - Backend API created under: $root\api\{module}\[controllers|models|routes|services|...]" -ForegroundColor Cyan
+Write-Host "`nReminder: backup any custom code you may have had under lib/features or api before running this." -ForegroundColor Yellow

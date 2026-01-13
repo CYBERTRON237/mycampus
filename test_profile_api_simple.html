@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Profile API</title>
+</head>
+<body>
+    <h1>Test Profile API</h1>
+    <button onclick="testPreinscription()">Test Preinscription API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testPreinscription() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                // Simuler un token JWT (vous devrez utiliser un vrai token)
+                const token = 'test-token';
+                
+                const response = await fetch('http://localhost/mycampus/api/profile/preinscription', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3>Response:</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

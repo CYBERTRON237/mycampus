@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Complet API Préinscription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Complet API Préinscription</h1>
+    
+    <div class="test-section">
+        <h3>1. Tests de base</h3>
+        <button onclick="testHeaders()">Test Headers</button>
+        <button onclick="testDatabaseInclude()">Test Include Database</button>
+        <button onclick="testDatabaseConnection()">Test Connexion BD</button>
+        <button onclick="testTableExists()">Test Table Exists</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Tests API</h3>
+        <button onclick="testSubmitAPI()">Test Submit API</button>
+        <button onclick="testSubmitAPIWithRealData()">Test avec données réelles</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Debug</h3>
+        <button onclick="testDirectAccess()">Test Accès Direct</button>
+        <button onclick="testHTMLErrors()">Test Erreurs HTML</button>
+    </div>
+    
+    <div id="result"></div>
+    
+    <script>
+        function showResult(title, status, response, headers = '') {
+            const resultDiv = document.getElementById('result');
+            const className = status === 200 ? 'success' : (status >= 400 ? 'error' : 'info');
+            
+            resultDiv.className = `result ${className}`;
+            resultDiv.innerHTML = `
+=== ${title} ===
+Status: ${status}
+${headers ? 'Headers:\n' + headers + '\n' : ''}Response:
+${response}
+            `;
+        }
+        
+        async function testHeaders() {
+            try {
+                const response = await fetch('/api/preinscription/submit_test.php', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                const text = await response.text();
+                showResult('Test Headers', response.status, text);
+            } catch (error) {
+                showResult('Test Headers - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testDatabaseInclude() {
+            try {
+                const response = await fetch('/api/config/test_connection.php', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                const text = await response.text();
+                showResult('Test Include Database', response.status, text);
+            } catch (error) {
+                showResult('Test Include Database - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testDatabaseConnection() {
+            try {
+                const response = await fetch('/api/config/check_table.php', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                const text = await response.text();
+                showResult('Test Connexion BD', response.status, text);
+            } catch (error) {
+                showResult('Test Connexion BD - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testTableExists() {
+            try {
+                const response = await fetch('/api/preinscription/submit.php', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        test: 'table_exists'
+                    })
+                });
+                
+                const text = await response.text();
+                showResult('Test Table Exists', response.status, text);
+            } catch (error) {
+                showResult('Test Table Exists - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testSubmitAPI() {
+            try {
+                const response = await fetch('/api/preinscription/submit.php', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const text = await response.text();
+                showResult('Test Submit API (vide)', response.status, text);
+            } catch (error) {
+                showResult('Test Submit API - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testSubmitAPIWithRealData() {
+            const testData = {
+                unique_code: 'TEST2024003',
+                faculty: 'Faculté des Sciences (FS)',
+                last_name: 'Test',
+                first_name: 'User',
+                middle_name: null,
+                date_of_birth: '2000-01-01',
+                is_birth_date_on_certificate: 1,
+                place_of_birth: 'Yaoundé',
+                gender: 'MASCULIN',
+                cni_number: null,
+                residence_address: 'Yaoundé, Cameroun',
+                marital_status: 'CELIBATAIRE',
+                phone_number: '655123456',
+                email: 'test@example.com',
+                first_language: 'FRANÇAIS',
+                professional_situation: 'SANS EMPLOI'
+            };
+            
+            try {
+                const response = await fetch('/api/preinscription/submit.php', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const text = await response.text();
+                showResult('Test Submit API (données réelles)', response.status, text);
+            } catch (error) {
+                showResult('Test Submit API - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testDirectAccess() {
+            try {
+                const response = await fetch('/api/preinscription/submit.php', {
+                    method: 'GET'
+                });
+                
+                const text = await response.text();
+                showResult('Test Accès Direct GET', response.status, text);
+            } catch (error) {
+                showResult('Test Accès Direct - ERROR', 0, error.message);
+            }
+        }
+        
+        async function testHTMLErrors() {
+            try {
+                // Test avec un endpoint qui n'existe pas
+                const response = await fetch('/api/preinscription/nonexistent.php');
+                const text = await response.text();
+                showResult('Test Erreur 404', response.status, text);
+            } catch (error) {
+                showResult('Test Erreur 404 - ERROR', 0, error.message);
+            }
+        }
+    </script>
+</body>
+</html>

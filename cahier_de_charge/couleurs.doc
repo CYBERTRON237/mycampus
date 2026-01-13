@@ -1,0 +1,95 @@
+🎨 PALETTE MYCAMPUS — "Black & Blue"
+1) Couleur principale (Primary)
+
+⚫ Noir Profond (Accessible et élégant)
+Hex : #0D0D0D
+
+Pourquoi :
+
+Noir pur peut fatiguer → donc #0D0D0D est plus doux
+
+Parfait pour le thème principal et le dark mode
+
+Très bon contraste avec du texte blanc ou bleu clair
+
+Utilisation :
+
+Barre du haut
+
+Écrans principaux
+
+Fond global
+
+2) Couleur d’accent / d’appui (Accent)
+
+🔵 Bleu Clair Technologique
+Hex : #3BA3FF
+
+Pourquoi :
+
+Visuel, lumineux, attire l’œil sans être agressif
+
+Fonctionne très bien sur un fond noir
+
+Très lisible même pour plusieurs types de daltonisme
+
+Moderne (style Telegram / Discord mais plus académique)
+
+Utilisation :
+
+Boutons importants
+
+Liens
+
+Icônes actives
+
+Highlights dans les listes
+
+3) Couleur de soutien (Support / Neutral)
+
+⚫ Gris Foncé Lisible
+Hex : #1B1B1D
+
+Pourquoi :
+
+Permet de structurer sans utiliser du noir partout
+
+Sert pour les cartes, champs texte, panneaux secondaires
+
+Donne un look professionnel et hiérarchisé
+
+Utilisation :
+
+Cards
+
+Sections
+
+Fond des champs
+
+Menus secondaires
+
+✔ Résumé (parfait pour ton thème "Black & Blue")
+Rôle	Nom	Hex
+Primary	Noir profond	#0D0D0D
+Accent	Bleu clair	#3BA3FF
+Support	Gris foncé	#1B1B1D
+🎯 Est-ce que cette palette est bonne pour l’accessibilité ?
+
+Oui.
+Elle passe les contrastes WCAG AA ou AAA dans presque tous les cas (surtout #3BA3FF sur noir).
+
+C’est l’une des meilleures combinaisons pour :
+
+une app moderne
+
+une app étudiante
+
+un style sérieux et premium
+
+un confort visuel longue durée
+
+Si tu veux, je peux :
+➡ t’en faire une version light mode harmonisée
+➡ générer un thème Flutter Material 3 complet
+➡ te préparer un mockup visuel (sans images personnelles)
+➡ proposer une variante plus "universitaire" ou plus "tech"

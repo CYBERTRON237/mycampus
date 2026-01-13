@@ -1,0 +1,494 @@
+✔ Application multiplateforme : mobile (Android/iOS), Web, Desktop (Windows/macOS/Linux)
+✔ Architecture multi-universités : gestion locale + centre national
+✔ Propositions techniques avancées
+✔ Terminologie professionnelle et structure formelle
+
+Aucun code n’apparaît, uniquement un cahier de charges professionnel.
+
+
+---
+
+📘 CAHIER DES CHARGES OFFICIEL — NOVAPRIME
+
+Plateforme Numérique Universitaire Multiplateforme et Interconnectée du Cameroun
+Version : 2.0 – 2025
+Rédigé par : Novaprime (Concepteur & Éditeur Technologique)
+
+
+---
+
+1. CONTEXTE ET JUSTIFICATION
+
+Le système universitaire camerounais est composé de nombreuses universités publiques et privées qui fonctionnent en silos, sans plateforme numérique unifiée pour la communication institutionnelle, la gestion académique légère, la diffusion d’opportunités (stages/emplois/bourses) ou l’interconnexion des communautés étudiantes.
+
+Actuellement, la communication se fait via des plateformes étrangères comme WhatsApp, Telegram ou Facebook, ce qui entraîne :
+
+une dépendance numérique non souveraine ;
+
+un manque de sécurité et de confidentialité ;
+
+une absence d’archives académiques centralisées ;
+
+une incohérence des informations ;
+
+une dispersion des groupes des filières et des années.
+
+
+Novaprime vise à proposer la première plateforme universitaire souveraine, sécurisée, interconnectée, multi-institutionnelle et multiplateforme, accessible de partout :
+➡ Mobile (Android / iOS)
+➡ Web (navigateurs modernes)
+➡ Desktop (Windows / macOS / Linux)
+➡ Applications progressives (PWA)
+
+
+---
+
+2. OBJECTIFS DU PROJET
+
+2.1 Objectif général
+
+Créer une plateforme numérique unique, moderne, souveraine et interconnectée permettant à l’ensemble des universités du Cameroun de communiquer, collaborer et gérer l’information universitaire, à travers une application multiplateforme.
+
+2.2 Objectifs spécifiques
+
+Centraliser les communications officielles des universités.
+
+Offrir un système de gestion locale (par université) et un système central (national).
+
+Permettre la création de groupes officiels (filières, niveaux, clubs, institutions).
+
+Offrir une base de données nationale pour les offres (stages, emplois, bourses).
+
+Fournir un système interne de messagerie (privée et communautaire).
+
+Assurer une interface utilisateur unifiée sur mobile, web et desktop.
+
+Permettre le suivi académique léger (cycle universitaire, parcours de l’étudiant).
+
+Garantir la souveraineté numérique (serveurs nationaux, contrôle administration locale).
+
+Assurer la sécurité et la confidentialité des données (standard international).
+
+
+
+---
+
+3. PÉRIMÈTRE DU PROJET
+
+3.1 Inclus
+
+Développement des applications :
+✔ Mobile (Android, iOS)
+✔ Web (PWA incluse)
+✔ Desktop (Windows/macOS/Linux via Flutter)
+
+Backend API centralisé + micro-services.
+
+Base de données nationale + bases locales par université (synchronisation).
+
+Interface d’administration locale (pour chaque université).
+
+Interface d’administration centrale (MINESUP / Novaprime).
+
+Gestion utilisateurs, groupes, annonces, offres.
+
+Messagerie interne et notifications.
+
+Sécurité avancée et gouvernance des données.
+
+Hébergement cloud + sauvegardes.
+
+
+3.2 Exclus (à intégrer dans versions futures)
+
+Paiements académiques en ligne.
+
+Intégration profonde avec SI académique existant (Moodle, SIGES, etc.).
+
+Appels vidéo / audio natifs.
+
+Salles de classe virtuelles.
+
+
+
+---
+
+4. PARTIES PRENANTES
+
+Novaprime (Concepteur, développeur, éditeur et mainteneur).
+
+Universités du Cameroun (UY1, UY2, Ngaoundéré, Douala, etc.).
+
+MINESUP (supervision nationale).
+
+Étudiants (utilisateurs principaux).
+
+Enseignants / Encadreurs (annonces, groupes filières).
+
+Associations étudiantes (gestion locale).
+
+Entreprises / recruteurs (publication d’offres).
+
+Hébergeur cloud national ou international.
+
+
+
+---
+
+5. ARCHITECTURE MULTIPLATEFORME
+
+5.1 Plateformes supportées
+
+Application Android (APK + Play Store)
+
+Application iOS (App Store)
+
+Application Web (URL dédiée + PWA)
+
+Application Desktop Windows
+
+Application Desktop macOS
+
+Application Desktop Linux
+
+
+5.2 Technologies utilisées (description seulement)
+
+Framework de développement multiplateforme : Flutter
+
+Backend / API : PHP (architecture MVC) + REST
+
+Base de données : MySQL 8.x
+
+Notifications : Firebase Cloud Messaging (FCM)
+
+Hébergement : VPS / Cloud scalable
+
+Sécurité : HTTPS, JWT, cryptage, audits
+
+
+
+---
+
+6. ARCHITECTURE NATIONALE — INTERCONNEXION DES UNIVERSITÉS
+
+6.1 Principe général
+
+Le système repose sur une architecture fédérée, composée :
+
+A. Noyau central (National)
+
+Base de données centrale : référentiel national
+
+Gestion des identités
+
+Offres de stages/emplois/bourses nationales
+
+Supervision par MINESUP / Novaprime
+
+Statistiques globales
+
+Interconnexion des universités
+
+
+B. Sous-systèmes locaux (Par université)
+
+Chaque université dispose de :
+
+sa base locale synchronisée
+
+son administration locale
+
+ses groupes officiels
+
+ses annonces internes
+
+son flux institutionnel local
+
+
+C. Synchronisation bidirectionnelle
+
+Les données critiques remontent au centre (stats, comptes, offres).
+
+Les informations nationales descendent localement (bourses, annonces MINESUP).
+
+Séparation stricte entre :
+✔ données locales
+✔ données nationales
+✔ données inter-universitaires
+
+
+
+---
+
+7. EXIGENCES FONCTIONNELLES (RF)
+
+(Réécrites sous forme formelle, adaptées multicanal et multi-universités)
+
+7.1 Authentification & Comptes
+
+RF-01 : Inscription via email + téléphone + institution.
+
+RF-02 : Connexion multiplateforme (Mobile/Web/Desktop).
+
+RF-03 : Vérification OTP (email + SMS optionnel).
+
+RF-04 : Récupération mot de passe.
+
+RF-05 : Rôles dynamiques :
+
+Student
+
+Leader
+
+Teacher
+
+University Admin
+
+National Admin (MINESUP)
+
+SuperAdmin (Novaprime)
+
+
+
+7.2 Profils utilisateurs
+
+RF-06 : Informations académiques : filière, année, institution.
+
+RF-07 : Profil multi-appareils synchronisé.
+
+RF-08 : Préférences de notifications.
+
+
+7.3 Groupes officiels
+
+RF-09 : Groupes par filière, année, niveau, club, département.
+
+RF-10 : Groupes nationaux (ex : “Bourses Cameroun 2025”).
+
+RF-11 : Groupes inter-universités pour projets communs.
+
+RF-12 : Modération avancée (admins + leaders).
+
+
+7.4 Annonces
+
+RF-13 : Annonces locales (université).
+
+RF-14 : Annonces nationales (MINESUP).
+
+RF-15 : Pièces jointes (PDF, images).
+
+
+7.5 Offres (stages/emplois/bourses)
+
+RF-16 : Offres locales + nationales.
+
+RF-17 : Filtrage intelligent (filière, année, université).
+
+RF-18 : Mise en avant d’offres critiques.
+
+
+7.6 Messagerie interne
+
+RF-19 : Chat privé (texte + fichiers).
+
+RF-20 : Chat de groupe officiel.
+
+RF-21 : Synchronisation multiplateforme en temps réel.
+
+
+7.7 Notifications
+
+RF-22 : Notifications push sur tous appareils.
+
+RF-23 : Réglages par type : groupes, offres, annonces, messages.
+
+
+7.8 Administration
+
+RF-24 : Back-office national.
+
+RF-25 : Back-office par université.
+
+RF-26 : Export CSV / audit.
+
+RF-27 : Logs sécurité.
+
+
+
+---
+
+8. EXIGENCES NON-FONCTIONNELLES (RNF)
+
+Performance
+
+RNF-01 : Temps de réponse API < 300 ms.
+
+RNF-02 : Optimisation pour connexions faibles.
+
+
+Sécurité
+
+RNF-03 : Cryptage données sensibles.
+
+RNF-04 : Stockage sécurisé.
+
+RNF-05 : Permissions strictes RBAC.
+
+
+Accessibilité
+
+RNF-06 : Accessible sur appareils bas de gamme.
+
+RNF-07 : Version Web 100% fonctionnelle.
+
+
+Fiabilité
+
+RNF-08 : 99% uptime.
+
+RNF-09 : Système de backup automatique.
+
+
+
+---
+
+9. MODÈLE DE DONNÉES FÉDÉRÉ (CONCEPTUEL)
+
+(entités sans code)
+
+Utilisateur
+
+Institution
+
+Groupe
+
+Message
+
+Annonce
+
+Offre
+
+Journal de logs
+
+Paramètres système
+
+Base centrale + bases locales synchronisées
+
+
+
+---
+
+10. INTERFACES UTILISATEURS (UI/UX)
+
+Mobile :
+
+Navigation tabulaire + drawer
+
+Mode clair (dark mode V2)
+
+
+Web :
+
+Dashboard responsive
+
+Interface propre type web-app (PWA)
+
+
+Desktop :
+
+Navigation vertical sidebar
+
+Synchronisation instantanée
+
+
+Écrans obligatoires :
+
+Tableau de bord
+
+Groupes
+
+Offres
+
+Annonces
+
+Messagerie
+
+Profil
+
+Paramètres
+
+Administration locale
+
+Administration nationale
+
+
+
+---
+
+11. LIVRABLES
+
+Application mobile (APK + iOS package)
+
+Application Web (PWA)
+
+Application Desktop (Windows/macOS/Linux)
+
+Backend API + documentation
+
+Base de données centrale + locales
+
+Back-office national & local
+
+Documentation technique
+
+Documentation utilisateur
+
+Cahier de test
+
+Rapport de sécurité
+
+Rapport de déploiement
+
+
+
+---
+
+12. PLAN DE DÉPLOIEMENT
+
+1. Phase pilote : 1 université
+
+
+2. Phase 2 : 5 universités
+
+
+3. Phase 3 : extension nationale
+
+
+4. Phase 4 : ouverture aux universités privées
+
+
+5. Phase 5 : intégration SI existants
+
+
+6. Phase 6 : services avancés (paiements, appels, IA)
+
+
+
+
+---
+
+13. MAINTENANCE & ÉVOLUTIONS
+
+Mises à jour mensuelles
+
+Mises à jour de sécurité obligatoires
+
+Évolutions :
+✔ Chat vocal/vidéo
+✔ Paiements universitaires
+✔ Carte étudiante numérique
+✔ Badges / Certifications
+✔ IA pour recommandation d’offres
+✔ Portail entreprises

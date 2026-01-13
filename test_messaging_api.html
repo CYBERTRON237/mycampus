@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Messaging</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>Test API MyCampus Messaging</h1>
+    
+    <div>
+        <h2>Envoyer un message</h2>
+        <input type="text" id="receiverId" placeholder="ID destinataire" value="2">
+        <input type="text" id="messageContent" placeholder="Contenu du message" value="Test depuis navigateur">
+        <button onclick="sendMessage()">Envoyer</button>
+        <div id="result"></div>
+    </div>
+    
+    <div>
+        <h2>Conversation ID</h2>
+        <input type="text" id="userId" placeholder="ID utilisateur" value="2">
+        <button onclick="getConversationId()">Get Conversation ID</button>
+        <div id="conversationResult"></div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const receiverId = document.getElementById('receiverId').value;
+            const content = document.getElementById('messageContent').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('http://127.0.0.1/mycampus/api/messaging/messages/send_message.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': '1'
+                    },
+                    body: JSON.stringify({
+                        receiver_id: receiverId,
+                        content: content,
+                        type: 'text'
+                    })
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function getConversationId() {
+            const userId = document.getElementById('userId').value;
+            const resultDiv = document.getElementById('conversationResult');
+            
+            try {
+                const response = await fetch(`http://127.0.0.1/mycampus/api/messaging/messages/get_conversation_id.php?user_id=${userId}`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

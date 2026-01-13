@@ -1,0 +1,376 @@
+Parfait — je vais te donner **un guide complet, clair, structuré et exhaustif** sur **le fonctionnement interne d’une université camerounaise**, comme si tu étais en train d’étudier son organisation pour créer un logiciel national (multi-universités).
+
+Je vais te donner :
+
+✔ La structure administrative
+✔ La structure académique (LMD / filières / niveaux)
+✔ Les services internes et leur rôle
+✔ Les processus internes (admissions, inscriptions, emplois du temps, examens, soutenances, diplômes)
+✔ Les flux documentaires
+✔ Les règles et particularités camerounaises
+✔ Les points indispensables pour faire une application qui gère plusieurs universités
+
+---
+
+# **I. STRUCTURE ADMINISTRATIVE D’UNE UNIVERSITÉ AU CAMEROUN**
+
+Le système universitaire camerounais est fortement inspiré du modèle francophone (France) et encadré par le Ministère de l’Enseignement Supérieur (MINESUP).
+
+## **1. Hiérarchie générale (du plus haut au plus bas)**
+
+### **1. Le Chancelier des Ordres Académiques**
+
+C’est un poste national (pas dans chaque université). Rôle : diplômes nationaux, distinctions académiques.
+
+### **2. Le MINESUP**
+
+Il prend toutes les décisions nationales :
+
+* Ouverture d’universités
+* Accréditation des filières
+* Calendrier académique national
+* Réglementation des examens
+* Nomination de certains responsables
+
+### **3. Au niveau de chaque université :**
+
+#### **a) Le Recteur / Président de l’Université**
+
+C’est le chef suprême de l’université
+
+* Gère la politique de l’université
+* Valide budgets, recrutements, décisions importantes
+* Supervise les facultés, grandes écoles, directions
+
+#### **b) Les Vice-Recteurs**
+
+Chaque vice-recteur a une mission :
+
+* VR chargé de la planification et du développement
+* VR chargé de la recherche et coopération
+* VR chargé des enseignements
+* VR chargé de la vie estudiantine
+
+#### **c) Le Secrétaire Général**
+
+Le “chef administratif”.
+
+* Coordonne les services administratifs
+* Supervise RH, finances, scolarité, logistique
+
+#### **d) Les Directions**
+
+Elles sont essentielles dans ton application :
+
+* **DSA** : Direction des Affaires Académiques et de la Scolarité
+* **DRH** : Direction des Ressources Humaines
+* **DAF** : Direction Administrative et Financière
+* **DOSI** : Informatique
+* **DAS** : Affaires Étudiantes
+* **Bibliothèque Centrale**
+
+---
+
+# **II. STRUCTURE ACADÉMIQUE**
+
+Chaque université est composée de :
+
+## **1. Facultés**
+
+Exemple :
+
+* Faculté des Sciences
+* Faculté des Lettres
+* Faculté de Médecine
+* Faculté de Droit
+* Faculté d’Économie
+
+## **2. Écoles et Instituts**
+
+* ENS
+* ENSET
+* FGI
+* IUT
+* Écoles d’ingénieurs…
+
+## **3. Départements**
+
+Dans chaque faculté :
+Exemple :
+
+* Mathématiques
+* Physique
+* Informatique
+* Chimie
+* Géographie
+* Histoire
+* Médecine générale
+* Génie civil
+* Télécom
+* Administration publique
+
+## **4. Le Système LMD**
+
+Depuis 2007, les universités camerounaises suivent le LMD :
+
+### **Licence : 3 ans (L1, L2, L3)**
+
+### **Master : 2 ans (M1, M2)**
+
+### **Doctorat : 3 ans (PhD)**
+
+Chaque année comporte :
+
+* 2 semestres
+* Des unités d’enseignement (UE)
+* Des crédits (ECTS ou crédits locaux)
+* Des notes semestrielles
+* Une validation annuelle
+
+---
+
+# **III. SERVICES OPÉRATIONNELS (LES + IMPORTANTS À NUMÉRISER)**
+
+Voici les services qu’une application doit gérer :
+
+## **1. La Scolarité**
+
+C’est le cœur de ton application :
+
+* Préinscriptions
+* Admissions
+* Inscription administrative
+* Inscription pédagogique
+* Cartes d’étudiants
+* Gestion matricules
+* Dossiers étudiants
+* Certificats de scolarité
+* Transferts (changement d’université ou filière)
+* Réinscriptions annuelles
+
+## **2. Le Service des Examens**
+
+* Calendrier des examens
+* Convocations
+* Salles et surveillants
+* Dépôt des notes
+* Rattrapages
+* Délibérations
+* PV de jury
+* Relevés de notes et transcripts
+
+## **3. Comptabilité / Finances**
+
+* Paiements : scolarité, droits d’examen
+* Recettes par faculté
+* Paiements Mobile Money, Carte bancaire
+* Gestion bourses et exonérations
+* Rapports financiers
+
+## **4. Ressources Humaines**
+
+* Recrutement enseignants et personnel
+* Planning de cours
+* Salaire, prime, vacation des enseignants
+
+## **5. Vie estudiantine**
+
+* Logements
+* Clubs et associations
+* Aides sociales
+* Activités sportives
+* Tickets restaurants universitaires
+
+---
+
+# **IV. PROCESSUS COMPLET DE FONCTIONNEMENT D’UN ÉTUDIANT**
+
+Voici **le workflow complet d’un étudiant**, du début à la fin :
+
+## **1. Préinscription**
+
+Concerne UNIQUEMENT les nouveaux bacheliers :
+
+* Création d’un compte candidat
+* Choix de filière(s)
+* Dépôt documents (BAC, photo, etc.)
+* Paiement frais de dossier
+* Attribution matricule *après validation*
+
+## **2. Admission**
+
+* Vérification du dossier par la scolarité
+* Publication de la liste des admis
+* Attribution du matricule unique
+
+## **3. Inscription administrative**
+
+Chaque année :
+
+* Paiement frais
+* Dossier (certificat médical, acte naissance, photo…)
+* Un étudiant déjà existant saute l’étape “préinscription”
+
+## **4. Inscription pédagogique**
+
+Par semestre :
+
+* Choix des UE
+* Validation par le chef de département
+* Inscription aux examens
+
+## **5. Suivi académique**
+
+* Emploi du temps personnalisé
+* Présences
+* Travail continu
+* Notes
+* Rattrapages
+* Délibération semestre
+* Passage en année supérieure
+
+## **6. Mémoire / Stage**
+
+* Dépôt sujet
+* Suivi encadrants
+* Soutenance
+
+## **7. Diplôme**
+
+* PV final
+* Relevé de notes et diplôme
+* Thèse (si doctorat)
+
+---
+
+# **V. SPÉCIFICITÉS LOCALES DU CAMEROUN**
+
+## **1. Matricule**
+
+Chaque université a son format :
+Exemple :
+
+* 22B12345
+* YDE-21-000450
+* FS-2024-000123
+
+## **2. Préinscriptions obligatoires seulement pour les nouveaux**
+
+Les étudiants déjà inscrits ne font *pas* de préinscription l’année suivante — ils se réinscrivent directement.
+
+## **3. Transferts**
+
+Un étudiant peut changer :
+
+* d’université
+* de filière
+* de niveau (avec équivalences)
+
+## **4. Notes et délibérations**
+
+Le système suit un modèle assez strict :
+
+* 70% examen final
+* 30% évaluation continue
+* Moyenne >= 10/20 pour valider l’UE
+* Jury de faculté pour validation finale
+
+---
+
+# **VI. COMMENT INTÉGRER TOUT CELA DANS TON APPLICATION**
+
+Ton app doit être découpée en modules :
+
+## **1. Module Universités (multi-campus)**
+
+* Ajouter université
+* Gestion Rectorat
+* Gestion facultés, écoles, départements
+* Gestion calendrier académique
+* Gestion filières et UE
+
+## **2. Module Préinscription**
+
+Seulement pour *nouveaux entrants*
+
+## **3. Module Inscription Administrative**
+
+Pour **tous** (y compris anciens étudiants)
+
+## **4. Module Inscription Pédagogique**
+
+Par semestre :
+
+* UE obligatoires / optionnelles
+* Validation par chef de département
+
+## **5. Module Examens & Notes**
+
+* Saisie enseignant
+* PV de délibération
+* Relevés
+* Rattrapage
+
+## **6. Module Finances**
+
+* Paiements
+* Recettes
+* Statistiques
+
+## **7. Module Services**
+
+* Logements
+* Bibliothèque
+* Clubs / associations
+
+## **8. Module Enseignants**
+
+* Planning cours
+* Saisie des notes
+* Solde vacations
+
+---
+
+# **VII. SI TU VEUX UN MODULE QUI GÈRE TOUTES LES UNIVERSITÉS DU CAMEROUN**
+
+Il te faut un système :
+
+### ✔ Multi-universités
+
+### ✔ Multi-facultés
+
+### ✔ Multi-campus
+
+### ✔ Multi-années académiques
+
+### ✔ Multi-rôles (recteur, doyen, directeur, chef département, enseignant, étudiant, parent)
+
+Ton app doit pouvoir :
+
+* Héberger plusieurs universités dans la même base
+* Avoir des données isolées par université
+* Avoir une super-administration nationale
+* Supporter des calendriers / règlements différents par université
+* Exporter des données dans les formats exigés par l’État
+
+---
+
+# **VIII. SI TU VEUX, JE PEUX AUSSI TE GÉNÉRER :**
+
+📌 Le cahier des charges complet (100% structuré word/pdf)
+📌 Le schéma UML complet des tables
+📌 Le diagramme de séquence étudiant/enseignant/scolarité
+📌 Le schéma des API REST
+📌 Le module “préinscription” déjà en PHP/MySQL
+📌 L’architecture Flutter pour ton futur app mobile MyCampus
+
+---
+
+# ✔ Dis-moi ce que tu veux maintenant :
+
+1. **Le cahier des charges complet en Word**
+2. **Le schéma UML de la base de données**
+3. **Un module en code (backend PHP / frontend Flutter)**
+4. **Le workflow complet préinscription → inscription → examens**
+
+Tu choisis quoi ?

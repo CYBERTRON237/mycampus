@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteRule ^students/(.*)$ ../student_management/students/$1 [L]
+RewriteRule ^students?$ ../student_management/students [L]
+RewriteRule ^(.*)$ index.php [L]

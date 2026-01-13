@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Groups</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .result { margin: 10px 0; padding: 10px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Test API Groups - MyCampus</h1>
+    
+    <div class="test-section">
+        <h2>1. Test GET /api/messaging/groups/my</h2>
+        <button onclick="testGetUserGroups()">Tester getUserGroups</button>
+        <div id="getGroupsResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test POST /api/messaging/groups/create</h2>
+        <button onclick="testCreateGroup()">Créer un groupe</button>
+        <div id="createGroupResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1/mycampus/api/messaging';
+        const TEST_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NjU3NjUxODQsImV4cCI6MTc2NTg1MTU4NCwiaXNzIjoibXljYW1wdXMiLCJkYXRhIjp7ImlkIjozOCwiZW1haWwiOiJqamtrQGdtYWlsLmNvbSIsImlwIjoiMTI3LjAuMC4xIn19.-TmBvxC4k4sdfrXqrhuYD-fmvMsPCe-EX63EonwLDV8';
+        
+        function displayResult(elementId, response, isSuccess) {
+            const element = document.getElementById(elementId);
+            const className = isSuccess ? 'success' : 'error';
+            element.innerHTML = `
+                <div class="result ${className}">
+                    <h4>${isSuccess ? 'Succès' : 'Erreur'}</h4>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        async function testGetUserGroups() {
+            try {
+                const response = await fetch(`${API_BASE}/groups/my`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TEST_TOKEN}`
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult('getGroupsResult', data, response.ok);
+            } catch (error) {
+                displayResult('getGroupsResult', {error: error.message}, false);
+            }
+        }
+        
+        async function testCreateGroup() {
+            try {
+                const groupData = {
+                    name: 'Groupe Test ' + Date.now(),
+                    description: 'Groupe créé via le test API',
+                    group_type: 'chat',
+                    visibility: 'private'
+                };
+                
+                const response = await fetch(`${API_BASE}/groups/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TEST_TOKEN}`
+                    },
+                    body: JSON.stringify(groupData)
+                });
+                
+                const data = await response.json();
+                displayResult('createGroupResult', data, response.ok);
+            } catch (error) {
+                displayResult('createGroupResult', {error: error.message}, false);
+            }
+        }
+    </script>
+</body>
+</html>

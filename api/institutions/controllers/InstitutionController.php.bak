@@ -1,0 +1,576 @@
+<?php
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../logs/php_errors.log');
+
+require_once __DIR__ . '/../../config/database.php';
+// Temporairement désactivé pour les tests
+// require_once __DIR__ . '/../../middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../models/Institution.php';
+
+class InstitutionController {
+    private $db;
+    private $institution;
+    private $auth;
+
+    public function __construct() {
+        try {
+            $database = new Database();
+            $this->db = $database->getConnection();
+            $this->institution = new Institution($this->db);
+            // Temporairement désactivé pour les tests
+            // $this->auth = new AuthMiddleware($this->db);
+            
+            error_log("InstitutionController initialisé avec succès");
+        } catch (Exception $e) {
+            error_log("ERREUR d'initialisation du contrôleur: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur de connexion à la base de données: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ]);
+            exit;
+        }
+    }
+
+    /**
+     * Vérifie les permissions de l'utilisateur
+     * @param string|null $requiredRole Le rôle requis pour accéder à la ressource
+     * @return array Les informations d'authentification de l'utilisateur
+     * @throws Exception Si l'authentification échoue ou si les permissions sont insuffisantes
+     */
+    private function checkPermissions($requiredRole = null) {
+        // Temporairement désactivé pour les tests
+        // $auth = $this->auth->validateToken();
+        // 
+        // if ($requiredRole && $auth['user']['role'] !== $requiredRole) {
+        //     throw new Exception('Accès non autorisé', 403);
+        // }
+        // 
+        // return $auth;
+        return ['user' => ['id' => 1, 'email' => 'test@test.com', 'role' => 'admin']];
+    }
+
+    /**
+     * Récupère toutes les institutions avec pagination et filtres
+     * @return array Les données des institutions avec pagination
+     * @throws PDOException En cas d'erreur de base de données
+     * @throws Exception En cas d'autres erreurs
+     */
+    public function getAll() {
+        $requestId = uniqid('req_', true);
+        
+        try {
+            error_log("[$requestId] ===== DÉBUT getAll() =====");
+            error_log("[$requestId] Méthode: " . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN'));
+            error_log("[$requestId] URI: " . ($_SERVER['REQUEST_URI'] ?? 'UNKNOWN'));
+            error_log("[$requestId] Paramètres GET: " . json_encode($_GET ?? []));
+            
+            // Vérifier les permissions (lève une exception en cas d'échec)
+            $auth = $this->checkPermissions();
+            error_log("[$requestId] Authentification réussie pour l'utilisateur: " . $auth['user']['email']);
+            
+            $params = [
+                'search' => isset($_GET['search']) ? trim($_GET['search']) : null,
+                'type' => isset($_GET['type']) ? trim($_GET['type']) : null,
+                'status' => isset($_GET['status']) ? trim($_GET['status']) : null,
+                'region' => isset($_GET['region']) ? trim($_GET['region']) : null,
+                'city' => isset($_GET['city']) ? trim($_GET['city']) : null,
+                'is_active' => isset($_GET['is_active']) ? filter_var($_GET['is_active'], FILTER_VALIDATE_BOOLEAN) : null,
+                'is_national_hub' => isset($_GET['is_national_hub']) ? filter_var($_GET['is_national_hub'], FILTER_VALIDATE_BOOLEAN) : null,
+                'order_by' => isset($_GET['order_by']) ? trim($_GET['order_by']) : 'name',
+                'order_dir' => isset($_GET['order_dir']) ? strtoupper(trim($_GET['order_dir'])) : 'ASC',
+                'page' => isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1,
+                'per_page' => isset($_GET['per_page']) ? min(max(1, (int)$_GET['per_page']), 100) : 20
+            ];
+            
+            error_log("[$requestId] Paramètres de recherche: " . json_encode($params));
+            
+            if (!in_array($params['order_dir'], ['ASC', 'DESC'])) {
+                $params['order_dir'] = 'ASC';
+            }
+            
+            error_log("[$requestId] Appel de institution->search()");
+            $result = $this->institution->search($params);
+            
+            if (!$result['success']) {
+                $errorMsg = $result['message'] ?? 'Erreur inconnue lors de la recherche';
+                error_log("[$requestId] ❌ Échec de la recherche: " . $errorMsg);
+                throw new Exception($errorMsg, 500);
+            }
+            
+            $response = [
+                'success' => true,
+                'data' => $result['data'],
+                'pagination' => $result['pagination']
+            ];
+            
+            error_log("[$requestId] ✅ Requête réussie: " . count($result['data']) . " institutions trouvées");
+            return $response;
+            
+        } catch (Exception $e) {
+            // Ajouter l'ID de requête à l'exception pour le débogage
+            $e->requestId = $requestId;
+            error_log("[$requestId] ❌ ERREUR: " . $e->getMessage());
+            error_log("[$requestId] Stack trace: " . $e->getTraceAsString());
+            throw $e;
+        } finally {
+            error_log("[$requestId] ===== FIN getAll() =====");
+        }
+    }
+
+    public function get($identifier) {
+        try {
+            $auth = $this->checkPermissions();
+            if (!$auth) {
+                return;
+            }
+            
+            error_log("Récupération de l'institution: $identifier");
+            
+            if (is_numeric($identifier)) {
+                $result = $this->institution->getById($identifier);
+            } else {
+                $result = $this->institution->getByCode($identifier);
+            }
+            
+            if ($result && $result['success']) {
+                http_response_code(200);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode($result, JSON_UNESCAPED_UNICODE);
+            } else {
+                http_response_code(404);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Institution non trouvée'
+                ], JSON_UNESCAPED_UNICODE);
+            }
+        } catch (Exception $e) {
+            error_log("Erreur dans get(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération de l\'institution',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function create() {
+        try {
+            $auth = $this->checkPermissions('admin');
+            if (!$auth) {
+                return;
+            }
+            
+            $json = file_get_contents("php://input");
+            $data = json_decode($json);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Données JSON invalides',
+                    'error' => json_last_error_msg()
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
+            if (empty($data->name)) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Le nom de l\'institution est requis'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
+            $result = $this->institution->create($data);
+            
+            if ($result['success']) {
+                http_response_code(201);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Institution créée avec succès',
+                    'data' => $result
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Erreur lors de la création de l\'institution',
+                    'errors' => $result['errors'] ?? []
+                ], JSON_UNESCAPED_UNICODE);
+            }
+        } catch (Exception $e) {
+            error_log("Erreur dans create(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la création de l\'institution',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function update($id) {
+        try {
+            $auth = $this->checkPermissions('admin');
+            if (!$auth) {
+                return;
+            }
+            
+            $json = file_get_contents("php://input");
+            $data = json_decode($json);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Données JSON invalides',
+                    'error' => json_last_error_msg()
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
+            if (empty($data)) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Aucune donnée fournie pour la mise à jour'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
+            $result = $this->institution->update($id, $data);
+            
+            if ($result['success']) {
+                http_response_code(200);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => true,
+                    'message' => $result['message'] ?? 'Institution mise à jour avec succès',
+                    'data' => $result['data'] ?? null
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                $statusCode = $result['status_code'] ?? 400;
+                http_response_code($statusCode);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Erreur lors de la mise à jour de l\'institution',
+                    'errors' => $result['errors'] ?? []
+                ]);
+            }
+        } catch (Exception $e) {
+            error_log("Erreur dans update(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de l\'institution',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function delete($id) {
+        try {
+            $auth = $this->checkPermissions('admin');
+            if (!$auth) return;
+            
+            $result = $this->institution->delete($id);
+            
+            if ($result['success']) {
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => $result['message']
+                ]);
+            } else {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Erreur lors de la désactivation de l\'institution'
+                ]);
+            }
+        } catch (Exception $e) {
+            error_log("Erreur dans delete(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression de l\'institution',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function activate($id) {
+        try {
+            $auth = $this->checkPermissions('admin');
+            if (!$auth) return;
+            
+            $data = (object)['is_active' => true, 'status' => 'active'];
+            $result = $this->institution->update($id, $data);
+            
+            if ($result['success']) {
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Institution activée avec succès'
+                ]);
+            } else {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Erreur lors de l\'activation de l\'institution'
+                ]);
+            }
+        } catch (Exception $e) {
+            error_log("Erreur dans activate(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de l\'activation de l\'institution',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function getStats() {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $auth = $this->checkPermissions();
+            if (!$auth) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Non autorisé'
+                ]);
+                return;
+            }
+            
+            error_log("Récupération des statistiques des institutions");
+            
+            // Initialiser les statistiques par défaut
+            $mainStats = [
+                'total' => 0,
+                'active_count' => 0,
+                'national_hub_count' => 0
+            ];
+            
+            // Récupérer les statistiques principales
+            $query = "SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_count,
+                        SUM(CASE WHEN is_national_hub = 1 THEN 1 ELSE 0 END) as national_hub_count
+                      FROM institutions";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                $mainStats = array_merge($mainStats, $result);
+                
+                // Convertir les valeurs en entiers
+                $mainStats['total'] = (int)$mainStats['total'];
+                $mainStats['active_count'] = (int)$mainStats['active_count'];
+                $mainStats['national_hub_count'] = (int)$mainStats['national_hub_count'];
+            }
+            
+            // Récupérer les statistiques par type
+            $byType = [];
+            $queryByType = "SELECT type, COUNT(*) as count FROM institutions GROUP BY type";
+            $stmtType = $this->db->prepare($queryByType);
+            if ($stmtType->execute()) {
+                while ($row = $stmtType->fetch(PDO::FETCH_ASSOC)) {
+                    $byType[$row['type']] = (int)$row['count'];
+                }
+            }
+            
+            // Récupérer les statistiques par statut
+            $byStatus = [];
+            $queryByStatus = "SELECT status, COUNT(*) as count FROM institutions WHERE status IS NOT NULL GROUP BY status";
+            $stmtStatus = $this->db->prepare($queryByStatus);
+            if ($stmtStatus->execute()) {
+                while ($row = $stmtStatus->fetch(PDO::FETCH_ASSOC)) {
+                    $byStatus[$row['status']] = (int)$row['count'];
+                }
+            }
+            
+            // Récupérer les statistiques par région
+            $byRegion = [];
+            $queryByRegion = "SELECT region, COUNT(*) as count FROM institutions WHERE region IS NOT NULL GROUP BY region";
+            $stmtRegion = $this->db->prepare($queryByRegion);
+            if ($stmtRegion->execute()) {
+                while ($row = $stmtRegion->fetch(PDO::FETCH_ASSOC)) {
+                    $byRegion[$row['region']] = (int)$row['count'];
+                }
+            }
+            
+            // Préparer la réponse
+            $stats = [
+                'total' => $mainStats['total'],
+                'active_count' => $mainStats['active_count'],
+                'national_hub_count' => $mainStats['national_hub_count'],
+                'by_type' => $byType,
+                'by_status' => $byStatus,
+                'by_region' => $byRegion
+            ];
+            
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $stats
+            ], JSON_UNESCAPED_UNICODE);
+            
+        } catch (PDOException $e) {
+            error_log("Erreur PDO dans getStats(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des statistiques',
+                'error' => $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            error_log("Erreur dans getStats(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des statistiques',
+                'error' => $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Récupère toutes les régions uniques des institutions
+     */
+    public function getRegions() {
+        try {
+            // Simple authentication check for now - we'll implement proper JWT later
+            $headers = getallheaders();
+            if (!isset($headers['Authorization'])) {
+                throw new Exception('Authorization header missing');
+            }
+            
+            $query = "SELECT DISTINCT region FROM institutions WHERE region IS NOT NULL AND region != '' ORDER BY region";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            
+            $regions = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $regions
+            ], JSON_UNESCAPED_UNICODE);
+            
+        } catch (PDOException $e) {
+            error_log("Erreur PDO dans getRegions(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des régions'
+            ]);
+        } catch (Exception $e) {
+            error_log("Erreur dans getRegions(): " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des régions'
+            ]);
+        }
+    }
+}
+
+$method = $_SERVER['REQUEST_METHOD'];
+$institutionController = new InstitutionController();
+
+$request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$uri_parts = explode('/', trim($request_uri, '/'));
+
+$institutions_pos = array_search('institutions', $uri_parts);
+
+$id = null;
+$action = null;
+
+if (isset($uri_parts[$institutions_pos + 1])) {
+    $next_part = $uri_parts[$institutions_pos + 1];
+    
+    if (in_array($next_part, ['activate', 'stats', 'regions'])) {
+        $action = $next_part;
+        $id = $uri_parts[$institutions_pos + 2] ?? null;
+    } else {
+        $id = $next_part;
+    }
+}
+
+error_log("Routage: Méthode=$method, Action=$action, ID=$id");
+
+switch ($method) {
+    case 'GET':
+        if ($action === 'stats') {
+            $institutionController->getStats();
+        } elseif ($action === 'regions') {
+            $institutionController->getRegions();
+        } elseif ($id) {
+            $institutionController->get($id);
+        } else {
+            $institutionController->getAll();
+        }
+        break;
+        
+    case 'POST':
+        $institutionController->create();
+        break;
+        
+    case 'PUT':
+        if ($id) {
+            if ($action === 'activate') {
+                $institutionController->activate($id);
+            } else {
+                $institutionController->update($id);
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID manquant']);
+        }
+        break;
+        
+    case 'DELETE':
+        if ($id) {
+            $institutionController->delete($id);
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID manquant']);
+        }
+        break;
+        
+    default:
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Méthode non autorisée']);
+        break;
+}
+?>

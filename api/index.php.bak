@@ -1,0 +1,212 @@
+<?php
+// Activer l'affichage des erreurs pour le débogage
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Définir le fuseau horaire
+date_default_timezone_set('Africa/Douala');
+
+// En-têtes CORS par défaut
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Répondre immédiatement aux requêtes OPTIONS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Fonction pour envoyer une réponse JSON
+function sendResponse($data, $statusCode = 200) {
+    http_response_code($statusCode);
+    echo json_encode($data);
+    exit();
+}
+
+// Récupérer l'URL demandée
+$request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$request_method = $_SERVER['REQUEST_METHOD'];
+
+// Debug
+error_log("Request URI: " . $_SERVER['REQUEST_URI']);
+error_log("Parsed URI: " . $request_uri);
+
+// Nettoyer l'URL en supprimant le chemin de base
+$base_path = '/mycampus/api';
+$request_uri = str_replace($base_path, '', $request_uri);
+
+error_log("Clean URI: " . $request_uri);
+
+// Router les requêtes
+switch ($request_uri) {
+    case '/test':
+        sendResponse(['success' => true, 'message' => 'Route test works!', 'uri' => $request_uri]);
+        break;
+        
+    case '/messaging/conversations':
+        if ($request_method === 'GET') {
+            require_once __DIR__ . '/messaging/controllers/SimpleMessageController.php';
+            $controller = new SimpleMessageController();
+            $controller->getConversations();
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case '/messaging/users/search':
+        if ($request_method === 'GET') {
+            require_once __DIR__ . '/messaging/controllers/SimpleMessageController.php';
+            $controller = new SimpleMessageController();
+            $controller->searchUsers();
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case '/messaging/messages/send':
+        if ($request_method === 'POST') {
+            require_once __DIR__ . '/messaging/controllers/SimpleMessageController.php';
+            $controller = new SimpleMessageController();
+            $controller->sendMessage();
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case strpos($request_uri, '/messaging/messages/') === 0:
+        if ($request_method === 'GET') {
+            require_once __DIR__ . '/messaging/controllers/SimpleMessageController.php';
+            $controller = new SimpleMessageController();
+            $parts = explode('/', $request_uri);
+            $conversationId = $parts[3] ?? '';
+            $controller->getMessages($conversationId);
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case '/messaging/users/search/phone':
+    case '/messaging/users/search/phone/':
+        if ($request_method === 'GET') {
+            require_once __DIR__ . '/messaging/controllers/SimpleMessageController.php';
+            $controller = new SimpleMessageController();
+            $controller->searchUsersByPhone();
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case '/institutions':
+    case '/institutions/':
+        if ($request_method === 'GET') {
+            require_once __DIR__ . '/config/database.php';
+            require_once __DIR__ . '/middleware/AuthMiddleware.php';
+            require_once __DIR__ . '/institutions/controllers/InstitutionController.php';
+            $controller = new InstitutionController();
+            $controller->getAll();
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case '/institutions/regions':
+    case '/institutions/regions/':
+        if ($request_method === 'GET') {
+            require_once __DIR__ . '/config/database.php';
+            require_once __DIR__ . '/middleware/AuthMiddleware.php';
+            require_once __DIR__ . '/institutions/controllers/InstitutionController.php';
+            $controller = new InstitutionController();
+            $controller->getRegions();
+        } else {
+            sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+        }
+        break;
+        
+    case '/institutions':
+    case '/institutions/':
+        // Temporairement désactiver l'authentification pour les tests
+        // $headers = getallheaders();
+        // $authHeader = $headers['Authorization'] ?? '';
+        // $token = str_replace('Bearer ', '', $authHeader);
+        
+        // if (!$token || !JWTUtils::validateToken($token)) {
+        //     sendResponse(['success' => false, 'message' => 'Token d\'authentification manquant'], 401);
+        //     break;
+        // }
+        
+        require_once __DIR__ . '/config/database.php';
+        require_once __DIR__ . '/jwt/jwt_utils.php';
+        require_once __DIR__ . '/universities/models/Institution.php';
+        require_once __DIR__ . '/universities/controllers/InstitutionController.php';
+        
+        $database = new Database();
+        $db = $database->getConnection();
+        $institution = new Institution($db);
+        $controller = new InstitutionController($institution);
+        $controller->getInstitutions();
+        break;
+        
+    case '/institutions/regions':
+    case '/institutions/regions/':
+        require_once __DIR__ . '/config/database.php';
+        require_once __DIR__ . '/jwt/jwt_utils.php';
+        require_once __DIR__ . '/universities/models/Institution.php';
+        require_once __DIR__ . '/universities/controllers/InstitutionController.php';
+        
+        $database = new Database();
+        $db = $database->getConnection();
+        $institution = new Institution($db);
+        $controller = new InstitutionController($institution);
+        $controller->getRegions();
+        break;
+        
+    case strpos($request_uri, '/institutions/') === 0:
+        // Vérifier si c'est la route /institutions/regions (déjà traitée)
+        if (strpos($request_uri, '/institutions/regions') === 0) {
+            break;
+        }
+        
+        // Extraire l'ID de l'URL
+        $pathParts = explode('/', trim($request_uri, '/'));
+        $id = $pathParts[1] ?? null; // L'ID est à l'index 1 après nettoyage
+        
+        if ($id && is_numeric($id)) {
+            require_once __DIR__ . '/config/database.php';
+            require_once __DIR__ . '/jwt/jwt_utils.php';
+            require_once __DIR__ . '/universities/models/Institution.php';
+            require_once __DIR__ . '/universities/controllers/InstitutionController.php';
+            
+            $database = new Database();
+            $db = $database->getConnection();
+            $institution = new Institution($db);
+            $controller = new InstitutionController($institution);
+            
+            if ($request_method === 'GET') {
+                $controller->getInstitution($id);
+            } elseif ($request_method === 'PUT') {
+                $controller->updateInstitution($id);
+            } elseif ($request_method === 'DELETE') {
+                $controller->deleteInstitution($id);
+            } else {
+                sendResponse(['success' => false, 'message' => 'Méthode non autorisée'], 405);
+            }
+        } else {
+            sendResponse(['success' => false, 'message' => 'ID invalide'], 400);
+        }
+        break;
+        
+    default:
+        // Vérifier si c'est une requête vers un fichier existant
+        $file_path = __DIR__ . $request_uri;
+        if (file_exists($file_path) && !is_dir($file_path)) {
+            return false; // Laissez le serveur web gérer les fichiers statiques
+        }
+        
+        // Route non trouvée
+        sendResponse(['success' => false, 'message' => 'Route non trouvée'], 404);
+        break;
+}

@@ -1,0 +1,44 @@
+RewriteEngine On
+
+# Routes pour le module de gestion des préinscriptions (priorité haute)
+RewriteRule ^list$ list_preinscriptions.php [L]
+RewriteRule ^list/(.*)$ list_preinscriptions.php [L]
+RewriteRule ^get$ get_preinscription.php [L]
+RewriteRule ^get/(.*)$ get_preinscription.php [L]
+
+# Routes spécifiques pour l'API de gestion des préinscriptions
+RewriteRule ^preinscriptions$ index.php [L]
+RewriteRule ^preinscriptions/([0-9]+)$ index.php [L]
+RewriteRule ^preinscriptions/([0-9]+)/accept$ index.php [L]
+RewriteRule ^preinscriptions/([0-9]+)/reject$ index.php [L]
+RewriteRule ^preinscriptions/([0-9]+)/payment$ index.php [L]
+RewriteRule ^preinscriptions/stats$ index.php [L]
+RewriteRule ^institutions$ index.php [L]
+RewriteRule ^faculties$ index.php [L]
+RewriteRule ^programs$ index.php [L]
+RewriteRule ^submit$ index.php [L]
+
+# Routes connues qui doivent générer "Route not found"
+RewriteRule ^gestion$ index.php [L]
+RewriteRule ^gestion/(.*)$ index.php [L]
+RewriteRule ^management$ index.php [L]
+RewriteRule ^management/(.*)$ index.php [L]
+
+# Route principale vers index.php
+RewriteRule ^$ index.php [L]
+
+# Route par défaut pour tout le reste (sauf si fichier existe)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L]
+
+# Headers CORS
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-User-ID"
+</IfModule>
+
+# Gérer les requêtes OPTIONS
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]

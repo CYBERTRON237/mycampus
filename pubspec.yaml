@@ -1,0 +1,101 @@
+name: mycampus
+description: Plateforme universitaire multiplateforme MyCampus
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI & Design
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.3.3
+  flutter_animate: ^4.2.0
+  lottie: ^3.3.2
+  font_awesome_flutter: ^10.6.0
+  shimmer: ^3.0.0
+  percent_indicator: ^4.2.3
+  fl_chart: ^1.1.1
+  table_calendar: ^3.0.9
+  timeline_tile: ^2.0.0
+  badges: ^3.0.1
+  flutter_screenutil: ^5.9.2
+
+  # State Management & Providers
+  provider: ^6.1.1
+  get_it: ^9.2.0
+  flutter_bloc: ^9.1.1
+  dartz: ^0.10.1
+  equatable: ^2.0.5
+
+  # Networking & HTTP
+  http: ^1.1.0
+  connectivity_plus: ^7.0.0
+  dio: ^5.3.2
+  pretty_dio_logger: ^1.3.1
+  web_socket_channel: ^2.4.0
+
+  # Storage & Security
+  flutter_secure_storage: ^10.0.0-beta.5
+  shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Assets & Files
+  flutter_svg: ^2.0.7
+  cached_network_image: ^3.3.0
+  image_picker: ^1.0.5
+  file_picker: ^8.1.2
+  open_file: ^3.3.2
+  path_provider: ^2.1.1
+
+  # OTP & Security
+  otp: ^3.0.1
+  base32: ^2.1.3
+  qr_flutter: ^4.1.0
+  clipboard: ^2.0.2
+  crypto: ^3.0.3
+  encrypt: ^5.0.3
+  url_launcher: ^6.3.2
+  share_plus: ^12.0.1
+  package_info_plus: ^9.0.0
+  device_info_plus: ^12.3.0
+  flutter_local_notifications: ^19.5.0
+
+  # Validation & Utilities
+  email_validator: ^3.0.0
+  intl: ^0.20.2
+  stack_trace: ^1.11.0
+  logger: ^2.0.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.13
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  hive_generator: ^2.0.1
+  json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.14.4
+
+# Configuration pour le logo de l'application
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/mycampus.png"
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/icons/mycampus.png
+    - assets/stickers/
+    - assets/stickers/emotions/
+    - assets/stickers/reactions/
+    - assets/stickers/animals/
+    - assets/stickers/celebrations/

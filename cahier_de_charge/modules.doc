@@ -1,0 +1,460 @@
+Super — on y va. Je te fournis d’abord une **liste A→Z des modules** la plus complète et volumineuse possible pour MyCampus, ensuite je décris **pour chaque module** ce qu’il contient (écrans/components, modèles, contrôleurs, tables BD, API, services, points de sécurité, tests). Enfin je donne **une architecture MVC Flutter** précise, arborescence recommandée, et des conventions de nommage / bonnes pratiques pour garder tout professionnel et maintenable.
+
+# 1) Liste complète des modules (A → Z)
+
+A. Accessibilité (a11y)
+B. Authentification & Identité (Auth, SSO, OTP)
+C. Analyse & Statistiques (Analytics)
+D. Annonces institutionnelles (Local & National)
+E. Assistance / Support (Helpdesk, tickets)
+F. Backup & Restauration
+G. Groupes & Communautés (filières, clubs, projets)
+H. Hébergement de documents (Docs / Bibliothèque)
+I. Import / Export (CSV, Excel, PDF)
+J. Journal de Logs & Audit (Audit trail)
+K. KYC & Vérification (optionnel pour comptes avancés)
+L. Localisation & Multilingue (i18n, l10n)
+M. Messagerie (chat privé, groupes, fichiers)
+N. Notifications (Push, in-app, email, SMS)
+O. Offres (stages, emplois, bourses)
+P. Paramètres utilisateur & préférences
+Q. Quizz / Évaluations légères (optionnel)
+R. Recherche & Filtrage global (full-text, facettes)
+S. Sécurité & Gouvernance (RBAC, JWT, cryptage)
+T. Tableaux de bord (user / uni / national)
+U. Utilisateurs & Profils académiques
+V. Versioning & Migrations BD
+W. Webhooks & Intégrations externes (Moodle, SIGES, LDAP)
+X. eXportation de rapports (PDF, XLSX)
+Y. YAML / Configurations déployables (environnements)
+Z. Zone Admin (back-office local & national)
+
+(La liste ci-dessus est exhaustive ; chaque item est un module à part entière.)
+
+---
+
+# 2) Détails module par module (structure standardisée)
+
+Pour **chaque** module je fournis :
+
+* Objectif
+* Écrans / Widgets principaux (Views)
+* Modèles de données (Model)
+* Contrôleurs / State management (Controller)
+* Tables BD / champs essentiels
+* Endpoints API / services
+* Points de sécurité / confidentialité
+* Tests recommandés
+
+Je vais détailler les modules les plus critiques (les autres suivent le même pattern). Si tu veux tout en extreme détail pour chaque item, dis-le mais je te fournis déjà un niveau très complet ici.
+
+---
+
+## A. Accessibilité (a11y)
+
+* Objectif : rendre l’app utilisable par personnes avec déficiences visuelles/auditives/motrices.
+* Views : Settings → Accessibilité (taille police, contraste, lecteur d’écran toggle), composants accessibles (boutons, inputs)
+* Model : AccessibilityPreferences {fontScale, highContrast, reducedMotion, screenReaderEnabled}
+* Controller : AccessibilityController (applique thème/scale via Provider/Bloc)
+* BD : user_accessibility_preferences(user_id, font_scale, high_contrast, reduced_motion)
+* API : GET/PUT /users/{id}/accessibility
+* Sécurité : stocker préférences en clair ; vérifier que la modification est limitée au propriétaire/admin.
+* Tests : tests unitaires d’appli des paramètres, tests d’UI pour contrastes, scans a11y (axe).
+
+---
+
+## B. Authentification & Identité
+
+* Objectif : Inscription, connexion, MFA, SSO, gestion sessions.
+* Views : Login, Register (email/phone/university), OTP, ResetPassword, Profile security
+* Model : UserAuth (id, email, phone, password_hash, salt, roles, last_login, mfa_enabled)
+* Controller : AuthController (login, register, refreshToken, logout)
+* BD : users, user_roles, sessions, oauth_providers
+* API : POST /auth/login, POST /auth/register, POST /auth/otp, POST /auth/refresh
+* Sécurité : hashing (bcrypt/argon2), JWT expirations, refresh tokens revocation, rate limiting, account lockout, secure cookie flags, CSRF protection pour web.
+* Tests : tests sécurité (brute force), tests d’intégration SSO, tests unitaires de validation.
+
+---
+
+## C. Analyse & Statistiques
+
+* Objectif : métriques d’usage (DAU/MAU), activité par université, offres consultées.
+* Views : Dashboards analytics (charts, tables), exports CSV
+* Model : Event (user_id, event_type, meta, timestamp)
+* Controller : AnalyticsController, ingestion service
+* BD : events (bigtable), aggregated_metrics (precomputed)
+* API : POST /events, GET /analytics/{scope}
+* Intégration : outil BI (Metabase/Redash) ou stockage BigQuery/ClickHouse
+* Sécurité : anonymisation, retention policy
+* Tests : tests d’exactitude agrégations, charge tests ingestion.
+
+---
+
+## D. Annonces (local & national)
+
+* Objectif : publier annonces officielles (filières / universités / national)
+* Views : CreateAnnouncement, FeedAnnouncement, AnnouncementDetails
+* Model : Announcement {id, title, body, attachments, scope, publisher_id, start_date, end_date, pinned}
+* Controller : AnnouncementController (CRUD, pin, target)
+* BD : announcements, announcement_attachments, announcement_targets
+* API : GET /announcements, POST /announcements
+* Sécurité : validation des rôles (only admin/teacher), scan attachments (virus), file size limits
+* Tests : tests permissions, upload file validation.
+
+---
+
+## E. Assistance / Support (Helpdesk)
+
+* Objectif : tickets, chat support, FAQ
+* Views : NewTicket, TicketList, TicketDetails, FAQ
+* Model : Ticket {id, user_id, subject, status, messages}
+* Controller : TicketController, Notification service
+* BD : tickets, ticket_messages
+* API : POST /tickets, GET /tickets
+* Sécurité : accès limité au propriétaire & support; logs
+* Tests : tests lifecycle tickets.
+
+---
+
+## F. Backup & Restauration
+
+* Objectif : sauvegardes régulières de BD et assets
+* Services : backup scheduler, restore script, export snapshots
+* Stockage : S3-compatible (ou hébergeur national)
+* Sécurité : chiffrement au repos (KMS), gestion clés
+* Tests : restauration d’un snapshot en staging.
+
+---
+
+## G. Groupes & Communautés
+
+* Objectif : gérer groupes officiels, permissions, modération
+* Views : GroupList, GroupDetails, GroupChat, GroupAdmin
+* Model : Group {id, name, type, owner_uni_id, privacy}
+* Controller : GroupController, ModerationController
+* BD : groups, group_members, group_roles, group_posts
+* API : /groups, /groups/{id}/members
+* Sécurité : modération, rapports (report_post)
+* Tests : tests d’accès, de modération.
+
+---
+
+## H. Hébergement de documents (Docs / Bibliothèque)
+
+* Objectif : dépôt PDF, syllabus, supports de cours
+* Views : Library, DocumentViewer, UploadDocument
+* Model : Document {id, title, type, owner_id, course_id}
+* Stockage : object store, CDN
+* API : /documents (signed URLs), preview generation (PDF thumnails)
+* Sécurité : droits d’accès, DRM léger possible
+* Tests : téléchargement, streaming, quotas.
+
+---
+
+## I. Import / Export (CSV, Excel, PDF)
+
+* Objectif : import listes étudiants, export rapports
+* Views : ImportWizard, ExportDialog
+* Services : Parsers, validators, job queue (background)
+* BD : import_jobs, export_jobs
+* API : POST /imports, GET /exports/{id}
+* Sécurité : validation schéma, rate limiting.
+
+---
+
+## J. Journal de Logs & Audit
+
+* Objectif : traçage actions sensibles (création, suppression, accès)
+* BD : audit_logs {user_id, action, object_type, object_id, timestamp, ip}
+* API : GET /audit (admin only)
+* Sécurité : accès restreint, retention policy.
+
+---
+
+## K. KYC & Vérification
+
+* Objectif : vérification identité pour certains rôles
+* Views : UploadID, KYCStatus
+* Model : KycRequest {user_id, status, documents}
+* Processus : reviews manuelles + OCR
+* Sécurité : chiffrement documents.
+
+---
+
+## L. Localisation & Multilingue
+
+* Objectif : support FR/EN + dialectes
+* Implementation : arb/json resources, date/number formats
+* Views : Language selector
+* Tests : strings coverage, RTL check if needed.
+
+---
+
+## M. Messagerie (chat)
+
+* Objectif : chat 1:1, groupes officiels, fichiers
+* Views : ChatList, ChatWindow, MessageComposer
+* Model : Message {id, chat_id, sender_id, content, attachments, read_by}
+* Controller : ChatController
+* Realtime : WebSocket / Socket.IO / Firebase Realtime or custom using MQTT
+* BD : chats, chat_participants, messages, message_attachments
+* Sécurité : E2E optional, moderation, attachment scanning
+* Tests : delivery, ordering, offline sync, conflict resolution.
+
+---
+
+## N. Notifications
+
+* Objectif : push (FCM), in-app, email, SMS
+* Views : NotificationCenter, NotificationSettings
+* Model : Notification {id, user_id, type, payload, read_at}
+* Services : FCM service, Email service (SES/SMTP), SMS gateway (optional)
+* DB : notifications
+* Sécurité : préférences respectées, throttling.
+
+---
+
+## O. Offres (stages/emplois/bourses)
+
+* Objectif : publication, candidature, filtre selon filière/année
+* Views : OffersList, OfferDetails, ApplyOffer, MyApplications
+* Model : Offer {id, company, description, requirements, target_filiere, expiry}
+* Controller : OfferController
+* BD : offers, applications, offer_tags
+* Features : recommandations IA (future), mise en avant (promotion)
+* Tests : filtrage, application flow.
+
+---
+
+## P. Paramètres & Préférences
+
+* Objectif : préférences par utilisateur
+* Views : Settings (notifications, profile, privacy)
+* Model : Preferences {locale, notifications_enabled, privacy_settings}
+* API : GET/PUT /users/{id}/preferences
+
+---
+
+## Q. Quizz / Évaluations
+
+* Objectif : mini-quizz (facultatif)
+* Views : QuizList, QuizAttempt, Results
+* Model : Quiz, Question, Attempt
+* BD : quizzes, questions, attempts
+* Tests : scoring, timer.
+
+---
+
+## R. Recherche & Filtrage
+
+* Objectif : recherche universelle (users, offers, announcements)
+* Tech : ElasticSearch / MeiliSearch / Postgres full-text
+* API : GET /search?q=&filters=
+* Tests : pertinence, facettes.
+
+---
+
+## S. Sécurité & Gouvernance
+
+* Objectif : RBAC, cryptage, conformité
+* Components : role_service, permission checks middleware, encryption layer
+* Tests : pentest, vuln scans, unit tests.
+
+---
+
+## T. Tableaux de bord
+
+* Objectif : dashboards personnalisés (étudiant, enseignant, admin)
+* Views : DashboardStudent, DashboardUniAdmin, DashboardNational
+* Model : DashboardWidgets, widget configurations
+* Services : precomputed endpoints pour perf
+
+---
+
+## U. Utilisateurs & Profils académiques
+
+* Objectif : profils complets (filière, année, matricule)
+* Views : ProfileView, EditProfile, AcademicHistory
+* Model : UserProfile {id, name, uni_id, faculty, programme, year}
+* BD : users, academic_histories, linked_accounts
+* API : /users/{id}
+* Tests : validation champs.
+
+---
+
+## V. Versioning & Migrations BD
+
+* Objectif : schema migrations (Flyway, Liquibase), release tags
+* Practices : scripts idempotents, backup before migrations.
+
+---
+
+## W. Webhooks & Intégrations externes
+
+* Objectif : connecteurs (Moodle, SIGES, LDAP, WhatsApp entreprise)
+* Services : connector adapters, retries, queued processing
+* Sécurité : signed webhooks, scopes.
+
+---
+
+## X. eXportation de rapports
+
+* Objectif : rapports PDF/XLSX pour admin/université
+* Services : template engine (PDF generation), queue
+* Tests : rendu, encoding supports.
+
+---
+
+## Y. YAML / Config / Déploiement
+
+* Objectif : gérer config per env (dev/staging/prod)
+* Files : config.yaml (secrets dans env vars)
+* CI/CD : pipelines, migrations, smoke tests.
+
+---
+
+## Z. Zone Admin (Back-office)
+
+* Objectif : back-office national & local
+* Views : AdminPanel, UserMgmt, UniMgmt, AuditLogs, SystemHealth
+* Model : AdminRole, Permissions
+* API : admin/* with strict RBAC
+* Tests : scénario admin, sécurité.
+
+---
+
+# 3) Architecture MVC Flutter très précise (pour ces modules)
+
+## Principe : MVC adapté à Flutter (Model / View / Controller)
+
+* **Model** : classes immutables / serializables (freezed/json_serializable), repositories (abstraction data), DTOs.
+* **View** : Widgets (screens, components), responsive layout, small stateless widgets, separation presentational vs container.
+* **Controller** : logique UI (Bloc, Riverpod, or Provider + ChangeNotifier). Je recommande **Bloc** ou **Riverpod** pour grande app (scalability). Les controllers orchestrent use-cases et appellent les repositories/services.
+
+## Couche Data (Repository pattern)
+
+* RemoteDataSource (API client, retrofit/dio)
+* LocalDataSource (sqflite/Drift for local DB, hive for preferences)
+* Repositories (UserRepository, ChatRepository, OfferRepository) exposent méthodes business et gèrent sync/offline.
+
+## Couche Services
+
+* ApiService (Dio + interceptors JWT refresh)
+* AuthService (token storage, refresh)
+* NotificationService (FCM adapter)
+* SyncService (background sync & conflict resolution)
+* FileStorageService (uploads, signed URLs)
+* AnalyticsService
+
+## Exemple de flow (création d’annonce)
+
+View (CreateAnnouncementScreen) → Controller (AnnouncementBloc) → AnnouncementRepository.create() → AnnouncementRemoteDataSource.POST /announcements → ApiService interceptor ajoute JWT → Backend → response → local DB insert via LocalDataSource → Bloc emits success → View updates.
+
+## Structure de dossier recommandée (arborescence)
+
+```
+lib/
+├─ core/                    # utilitaires, theme, constants
+│  ├─ utils/
+│  ├─ theme/
+│  ├─ errors/
+│  └─ di/                   # dependency injection
+├─ models/                  # data classes (freezed)
+├─ services/                # api, auth, storage, notification
+├─ data/
+│  ├─ datasources/
+│  │  ├─ remote/
+│  │  └─ local/
+│  └─ repositories/
+├─ features/
+│  ├─ auth/
+│  │  ├─ presentation/
+│  │  │  ├─ pages/
+│  │  │  └─ bloc/ or provider/
+│  │  ├─ domain/           # usecases (optional)
+│  │  └─ data/
+│  ├─ chat/
+│  ├─ offers/
+│  ├─ announcements/
+│  └─ ... other modules ...
+├─ app.dart
+└─ main.dart
+```
+
+## Patterns à appliquer
+
+* **Separation of concerns** (no heavy logic in Widgets).
+* **Feature-first** (regrouper tout module ensemble sous /features).
+* **Usecases** (optional) : `domain/usecases` pour logique métier testable.
+* **DI** : get_it ou Riverpod pour injection.
+* **Error handling** : Result/Either types pour éviter exceptions non contrôlées.
+* **State management** : Bloc (cubits) ou Riverpod. Bloc s’équipe bien pour events/states sur features complexes (chat, sync).
+* **Serialization** : freezed + json_serializable pour immutabilité, copyWith, equality.
+* **Local DB** : Drift (moor) ou sembast; pour messages lourds utiliser SQLite/Drift.
+* **Background** : Workmanager / native background for sync.
+
+---
+
+# 4) Conventions de nommage & standards
+
+* Fichiers : `snake_case`, Classes : `PascalCase`, Widgets : suffix `Page`/`View`/`Widget` (ex. `LoginPage`, `UserProfileWidget`).
+* Bloc files : `feature_bloc.dart`, `feature_event.dart`, `feature_state.dart`
+* Repos : `user_repository.dart` (interface) + `user_repository_impl.dart`
+* API endpoints constants centralisés : `ApiEndpoints.authLogin`
+* Colors & theme : single source in `core/theme/app_theme.dart` using ton palette (#0D0D0D, #3BA3FF, #1B1B1D).
+* Comments & docstrings: dartdoc.
+
+---
+
+# 5) Sécurité & conformité (pratiques)
+
+* Stocker secrets en variables d’environnement, pas dans git.
+* HTTPS obligatoire, HSTS, CSP headers côté backend.
+* JWT short-lived + refresh tokens stockés sécurisé (secure storage / httpOnly cookie pour web).
+* RBAC middleware côté backend; checks côté frontend pour UX.
+* Chiffrement médias sensibles et documents (AES + KMS).
+* GDPR-like privacy: droit à l’effacement, export des données.
+
+---
+
+# 6) Tests & qualité
+
+* Unit tests pour repos & usecases (mocking).
+* Widget tests pour composants UI critiques.
+* Integration tests (Flutter driver / integration_test) pour flows (login, create announcement, chat message).
+* E2E pour pipelines CI.
+* Static analysis : `dart analyze`, `flutter format`, `pre-commit` hooks.
+* CI/CD : lint, tests, build, deploy to staging, smoke tests.
+
+---
+
+# 7) Stratégie de découpage prioritaire (implémentation progressive)
+
+1. Core infra (Auth, User profile, Theme, DI, API client)
+2. DB local & remote sync primitives
+3. Announcements + Groups (essentiel communication)
+4. Messaging (chat textuel) — utiliser prototype Firebase pour MVP si besoin
+5. Notifications (FCM)
+6. Offres (stages/emplois)
+7. Admin panels & Analytics
+8. Advanced features (KYC, imports, integrations, quizz)
+
+(Je *ne fournis pas de délais* — juste une suggestion d’ordre pour limiter dépendances.)
+
+---
+
+# 8) Livraison que je peux produire pour t’aider maintenant
+
+* Plan d’architecture détaillé par module en format markdown / PDF.
+* Arborescence de projet prête à cloner (squelette Flutter) avec fichiers boilerplate (DI, theme, auth).
+* Exemple complet d’un module (ex: Announcements) en code Flutter + backend pseudo-API (PHP) — modèle MVC.
+* Thème Flutter (MaterialTheme) prêt avec ta palette (dark-first).
+* Diagrammes (ERD, sequence diagrams) pour sync central/local.
+
+Dis-moi ce que tu veux en **premier livrable** :
+
+1. Le squelette d’arborescence + code boilerplate pour **Auth + Announcements + Profiles** ?
+2. Le design system / thème Flutter complet avec composants (boutons, cards, forms) ?
+3. L’ERD (diagramme de la BD fédérée) et scripts SQL initiaux pour MySQL 8.x ?
+
+Je peux générer n’importe lequel maintenant — choisis et je le construis tout de suite.

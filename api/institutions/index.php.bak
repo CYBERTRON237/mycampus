@@ -1,0 +1,361 @@
+<?php
+/**
+ * Fichier d'entrée de l'API des institutions
+ * Gère le routage des requêtes et la gestion des erreurs
+ */
+
+// Vérifier si des données ont déjà été envoyées au navigateur
+if (headers_sent($filename, $linenum)) {
+    die("Erreur: Les en-têtes ont déjà été envoyés dans $filename à la ligne $linenum");
+}
+
+// Activer l'affichage des erreurs en développement, les désactiver en production
+if (getenv('APP_ENV') === 'development') {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', 0);
+    error_reporting(E_ERROR | E_PARSE);
+}
+
+// Logs d'erreurs
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../logs/php_errors.log');
+
+// Fuseau
+date_default_timezone_set('Europe/Paris');
+
+// Tampon de sortie
+ob_start();
+
+// Utilitaire pour renvoyer JSON
+function sendJsonResponse($data, $statusCode = 200) {
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    // flush et exit pour s'assurer que rien d'autre ne s'affiche
+    while (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    exit;
+}
+
+// Fallback getallheaders() si non disponible (ex: CGI)
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) === 'HTTP_') {
+                $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
+                $headers[$key] = $value;
+            }
+        }
+        return $headers;
+    }
+}
+
+// Handler global d'exceptions non attrapées
+set_exception_handler(function($exception) {
+    error_log("Exception non attrapée: " . $exception->getMessage());
+    error_log("Stack trace: " . $exception->getTraceAsString());
+
+    $response = [
+        'success' => false,
+        'message' => 'Une erreur est survenue lors du traitement de votre demande'
+    ];
+
+    if (getenv('APP_ENV') === 'development') {
+        $response['error'] = $exception->getMessage();
+        $response['code'] = $exception->getCode();
+        $response['trace'] = $exception->getTraceAsString();
+    }
+
+    sendJsonResponse($response, 500);
+});
+
+// Erreurs fatales
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        error_log("Erreur fatale: " . print_r($error, true));
+
+        $response = [
+            'success' => false,
+            'message' => 'Une erreur fatale est survenue'
+        ];
+
+        if (getenv('APP_ENV') === 'development') {
+            $response['error'] = $error['message'];
+            $response['file'] = $error['file'];
+            $response['line'] = $error['line'];
+        }
+
+        // On essaie d'envoyer la réponse JSON (si possible)
+        if (!headers_sent()) {
+            sendJsonResponse($response, 500);
+        } else {
+            error_log("Impossible d'envoyer JSON: headers déjà envoyés.");
+        }
+    }
+});
+
+try {
+    // CORS
+    $allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost',
+        'http://127.0.0.1'
+    ];
+
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+    if (in_array($origin, $allowedOrigins, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    } elseif (!empty($origin)) {
+        error_log("Tentative d'accès non autorisée depuis l'origine: $origin");
+    }
+
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token, X-Requested-With, Accept, Authorization');
+    header('Content-Type: application/json; charset=utf-8');
+
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+            header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+        }
+        if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+            header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+        }
+        http_response_code(200);
+        exit(0);
+    }
+
+    // Journaux
+    $requestId = uniqid('req_', true);
+    $headers = getallheaders();
+    $body = file_get_contents('php://input');
+
+    $logMessage = sprintf(
+        "[%s] %s %s\nHeaders: %s\nQuery: %s\nBody: %s",
+        $requestId,
+        $_SERVER['REQUEST_METHOD'],
+        $_SERVER['REQUEST_URI'],
+        json_encode($headers),
+        json_encode($_GET),
+        $body
+    );
+
+    error_log("=== DÉBUT REQUÊTE $requestId ===\n$logMessage\n===================");
+
+    // Fichiers requis
+    $required_files = [
+        __DIR__ . '/../config/database.php' => 'Database',
+        __DIR__ . '/../middleware/AuthMiddleware.php' => 'AuthMiddleware',
+        __DIR__ . '/controllers/InstitutionController.php' => 'InstitutionController'
+    ];
+
+    foreach ($required_files as $file => $class) {
+        if (!file_exists($file)) {
+            throw new Exception("Fichier requis manquant: " . basename($file));
+        }
+        // inclure si la classe n'est pas déjà définie
+        if (!class_exists($class, false)) {
+            require_once $file;
+            if (!class_exists($class, false)) {
+                throw new Exception("La classe $class n'a pas été trouvée dans le fichier " . basename($file));
+            }
+        }
+    }
+
+    // Connexion DB
+    try {
+        $db = new Database();
+        $conn = $db->getConnection();
+        $conn->query('SELECT 1');
+    } catch (PDOException $e) {
+        throw new Exception("Erreur de connexion à la base de données: " . $e->getMessage(), 500, $e);
+    }
+
+    // Analyse de l'URL et routage
+    $basePath = '/mycampus/api/institutions';
+    $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    // supprimer exactement le préfixe et normaliser
+    $relativePath = preg_replace('#^' . preg_quote($basePath, '#') . '#', '', $requestUri);
+    $relativePath = trim($relativePath, '/');
+    $pathParts = $relativePath === '' ? [] : explode('/', $relativePath);
+
+    // Si premier segment numérique => c'est un id, sinon premier segment = endpoint
+    $endpoint = '';
+    $id = null;
+    if (isset($pathParts[0]) && $pathParts[0] !== '') {
+        if (ctype_digit($pathParts[0])) {
+            $id = $pathParts[0];
+        } else {
+            $endpoint = $pathParts[0];
+            if (isset($pathParts[1]) && ctype_digit($pathParts[1])) {
+                $id = $pathParts[1];
+            }
+        }
+    }
+
+    error_log("Chemin relatif: $relativePath");
+    error_log("Endpoint: " . ($endpoint ?: 'racine'));
+    error_log("ID: " . ($id ?: 'non spécifié'));
+    error_log("Méthode: " . $_SERVER['REQUEST_METHOD']);
+
+    // Instancier le contrôleur
+    $controller = new InstitutionController($conn); // si ton constructeur attend la connexion, adapte ici
+
+    // Récupérer le JSON du body
+    $getJsonRequestBody = function() {
+        $input = file_get_contents('php://input');
+        if (empty($input)) {
+            return [];
+        }
+        $data = json_decode($input, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception("Erreur de décodage JSON: " . json_last_error_msg(), 400);
+        }
+        return $data;
+    };
+
+    // Router
+    // Désactiver temporairement l'affichage des erreurs pour éviter toute sortie non désirée
+    $displayErrors = ini_get('display_errors');
+    ini_set('display_errors', 0);
+    
+    // Démarrer la mise en tampon de sortie si elle n'est pas déjà démarrée
+    if (ob_get_level() === 0) {
+        ob_start();
+    }
+    
+    try {
+        switch ($_SERVER['REQUEST_METHOD']) {
+            case 'GET':
+                error_log("Traitement d'une requête GET");
+                if ($id) {
+                    $controller->get($id);
+                } elseif ($endpoint === 'stats') {
+                    $controller->getStats();
+                } elseif ($endpoint === 'regions') {
+                    $controller->getRegions();
+                } elseif ($endpoint === '' || $endpoint === null) {
+                    $controller->getAll();
+                } else {
+                    throw new Exception("Endpoint non trouvé: $endpoint", 404);
+                }
+                break;
+
+        case 'POST':
+            error_log("Traitement d'une requête POST");
+            if ($endpoint === '' || $endpoint === null) {
+                $data = $getJsonRequestBody();
+                $controller->create($data);
+            } else {
+                throw new Exception("Endpoint non pris en charge: POST /$endpoint", 404);
+            }
+            break;
+
+            case 'PUT':
+                error_log("Traitement d'une requête PUT");
+                if ($id) {
+                    $data = $getJsonRequestBody();
+                    $controller->update($id, $data);
+                } elseif ($endpoint === 'bulk-update') {
+                    $data = $getJsonRequestBody();
+                    $controller->bulkUpdate($data);
+                } else {
+                    throw new Exception("ID de l'institution manquant pour la mise à jour", 400);
+                }
+                break;
+
+            case 'DELETE':
+                error_log("Traitement d'une requête DELETE");
+                // accepter /institutions/{id} ou ?id=...
+                $deleteId = $id ?? (isset($_GET['id']) ? $_GET['id'] : null);
+                if ($deleteId) {
+                    $controller->delete($deleteId);
+                } else {
+                    throw new Exception("ID de l'institution manquant pour la suppression", 400);
+                }
+                break;
+
+            default:
+                throw new Exception('Méthode non autorisée: ' . $_SERVER['REQUEST_METHOD'], 405);
+        }
+        
+        // Si on arrive ici, la requête a été traitée avec succès
+        // S'assurer qu'aucune sortie n'a été faite avant
+        if (ob_get_length() > 0) {
+            $output = ob_get_clean();
+            error_log("ATTENTION: Sortie non attendue détectée: " . substr($output, 0, 200) . "...");
+            throw new Exception("Erreur de sortie non gérée", 500);
+        }
+        
+    } catch (Exception $e) {
+        // Nettoyer la sortie tampon
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
+        // Si c'est une PDOException, logger plus d'informations
+        if ($e instanceof PDOException) {
+            error_log("Erreur PDO: " . $e->getMessage());
+            error_log("Code d'erreur: " . $e->getCode());
+            error_log("Fichier: " . $e->getFile() . " Ligne: " . $e->getLine());
+        }
+        
+        // Relancer l'exception pour qu'elle soit traitée par le gestionnaire global
+        throw $e;
+    } finally {
+        // Restaurer le paramètre display_errors
+        ini_set('display_errors', $displayErrors);
+    }
+
+} catch (Exception $e) {
+    // Nettoyer la sortie tampon
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    $statusCode = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+
+    $response = [
+        'success' => false,
+        'message' => $e->getMessage() ?: 'Une erreur inattendue est survenue',
+        'request_id' => $requestId ?? null,
+        'timestamp' => date('c')
+    ];
+
+    if (getenv('APP_ENV') === 'development') {
+        $response['debug'] = [
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ];
+    }
+
+    error_log(sprintf(
+        "[%s] ERREUR [%d] %s dans %s à la ligne %d\nStack trace:\n%s",
+        $requestId ?? 'unknown',
+        $e->getCode(),
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine(),
+        $e->getTraceAsString()
+    ));
+
+    sendJsonResponse($response, $statusCode);
+} finally {
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    if (isset($requestId)) {
+        error_log("=== FIN REQUÊTE $requestId ===\n");
+    }
+}
