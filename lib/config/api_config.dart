@@ -15,10 +15,10 @@ class ApiConfig {
   static String get baseUrl {
     if (kIsWeb) {
       // Pour le web, utiliser localhost est souvent plus fiable que 127.0.0.1
-      return 'http://localhost/mycampus/api';
+      return 'https://mycampus-ttgz.onrender.com/api';
     } else {
       // Pour mobile/desktop, 127.0.0.1 est standard
-      return 'http://127.0.0.1/mycampus/api';
+      return 'https://mycampus-ttgz.onrender.com/api';
     }
   }
   static const bool _isDebug = true;

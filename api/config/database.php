@@ -1,17 +1,17 @@
 <?php
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'mycampus';
-    private $username = 'root';
-    private $password = '';
+    private $host = 'sql100.infinityfree.com';
+    private $db_name = 'if0_40888420_mycampus';
+    private $username = 'if0_40888420';
+    private $password = '8462579130Abc';
     public $conn;
 
     public function getConnection() {
         $this->conn = null;
-        
+
         try {
             $this->conn = new PDO(
-                "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4",
+                "mysql:host={$this->host};dbname={$this->db_name};charset=utf8mb4",
                 $this->username,
                 $this->password,
                 [
@@ -20,27 +20,21 @@ class Database {
                     PDO::ATTR_EMULATE_PREPARES => false
                 ]
             );
-            
             return $this->conn;
-            
-        } catch(PDOException $e) {
-            // Journaliser l'erreur dans le fichier de log PHP
-            error_log("Erreur de connexion à la base de données: " . $e->getMessage());
-            
-            // Lancer une exception avec un message clair
-            throw new Exception("Impossible de se connecter à la base de données. Veuillez réessayer plus tard.");
+
+        } catch (PDOException $e) {
+            error_log("DB ERROR: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "Database connection failed"
+            ]);
+            exit;
         }
     }
 }
 
-// Fonction utilitaire pour obtenir une connexion PDO
 function getPDO() {
-    try {
-        $db = new Database();
-        return $db->getConnection();
-    } catch (Exception $e) {
-        // Journaliser l'erreur et la propager
-        error_log("Erreur dans getPDO(): " . $e->getMessage());
-        throw $e;
-    }
+    $db = new Database();
+    return $db->getConnection();
 }
